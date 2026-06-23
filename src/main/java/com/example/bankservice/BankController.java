@@ -1,51 +1,39 @@
 package com.example.bankservice;
 
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.servlet.HandlerMapping;
 
 
 @RestController
 public class BankController {
     private final BankService bankService;
 
-    public BankController(BankService bankService){
+
+    public BankController(BankService bankService, @Nullable HandlerMapping resourceHandlerMapping){
         this.bankService  = bankService;
     }
 
     @PostMapping("/api/accounts/{accountNumber}/withdraw")
 
     public ResponseEntity<BankAccountResponseDto> withdraw(@PathVariable String accountNumber, @RequestParam double amount){
-        BankAccount account = bankService.withdraw(accountNumber,amount);
-        BankAccountResponseDto dto = new BankAccountResponseDto();
-        dto.setName(account.getName());
-        dto.setBalance(account.getBalance());
-        dto.setAccountNumber(account.getAccountNumber());
-        return ResponseEntity.ok(dto);
+        BankAccountResponseDto account = bankService.withdraw(accountNumber,amount);
+        return ResponseEntity.ok(account);
     }
     @PostMapping("/api/accounts/{accountNumber}/deposit")
     public ResponseEntity<BankAccountResponseDto> deposit(@PathVariable String accountNumber, @RequestParam double depositAmount){
-        BankAccount account = bankService.deposit(accountNumber, depositAmount);
-        BankAccountResponseDto dto = new BankAccountResponseDto();
-        dto.setBalance(account.getBalance());
-        dto.setName(account.getName());
-        dto.setAccountNumber(account.getAccountNumber());
-
-
-
-        return ResponseEntity.ok(dto);
+        BankAccountResponseDto account = bankService.deposit(accountNumber, depositAmount);
+        return ResponseEntity.ok(account);
     }
 
     @PostMapping("/api/accounts/createAccount")
 
-    public ResponseEntity<BankAccountResponseDto> createAccount(@RequestParam String name, @RequestParam String AccountNumber){
-        BankAccount account = bankService.createAccount(name, AccountNumber);
-        BankAccountResponseDto dto = new BankAccountResponseDto();
-        dto.setName(account.getName());
-        dto.setAccountNumber(account.getAccountNumber());
-        dto.setBalance(account.getBalance());
-        return  ResponseEntity.ok(dto);
+    public ResponseEntity<BankAccountResponseDto> createAccount(@RequestBody CreateAccountRequestDto request){
+        BankAccountResponseDto account = bankService.createAccount(request.getName(), request.getAccountNumber());
+        return  ResponseEntity.ok(account);
     }
 
 }
