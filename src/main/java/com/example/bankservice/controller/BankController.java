@@ -1,11 +1,9 @@
 package com.example.bankservice;
 
 
-import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.servlet.HandlerMapping;
 
 
 @RestController
@@ -13,7 +11,7 @@ public class BankController {
     private final BankService bankService;
 
 
-    public BankController(BankService bankService, @Nullable HandlerMapping resourceHandlerMapping){
+    public BankController(BankService bankService){                           //buradaki constructor injection
         this.bankService  = bankService;
     }
 
@@ -24,7 +22,7 @@ public class BankController {
         return ResponseEntity.ok(account);
     }
     @PostMapping("/api/accounts/{accountNumber}/deposit")
-    public ResponseEntity<BankAccountResponseDto> deposit(@PathVariable String accountNumber, @RequestParam double depositAmount){
+    public ResponseEntity<BankAccountResponseDto> deposit(@PathVariable String accountNumber, @RequestParam double depositAmount) throws InvalidAmountException {
         BankAccountResponseDto account = bankService.deposit(accountNumber, depositAmount);
         return ResponseEntity.ok(account);
     }

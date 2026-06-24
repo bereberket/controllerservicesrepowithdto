@@ -1,10 +1,9 @@
 package com.example.bankservice;
 
+import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
-import javax.management.RuntimeMBeanException;
 
 @Service
 public class BankService {
@@ -15,8 +14,8 @@ public class BankService {
 
     public BankService(BankRepo bankreposi) {
         this.bankreposi = bankreposi;
-    }
-
+    }            //burada da constructor injeciton var.
+    @Transactional
     public BankAccountResponseDto withdraw(String accountNumber, double amount) {
         log.info("Withdraw operation started. Account Number: {}, Amount of Withdraw: {}", accountNumber, amount);
         if(amount<=0){
@@ -47,11 +46,12 @@ public class BankService {
         dto.setName(account.getName());
         return dto;
     }
-    public BankAccountResponseDto deposit(String accountNumber, double depositAmuont){
+    @Transactional
+    public BankAccountResponseDto deposit(String accountNumber, double depositAmuont) throws InvalidAmountException {
         log.info("Deposit operation started. Account Number: {}, Amount of Deposit: {}", accountNumber, depositAmuont);
         if(depositAmuont<=0){
             log.warn("Zero or smaller number! ");
-            throw new RuntimeException("Enter valid number");
+            throw new InvalidAmountException("Amount must be greater than zero");
         }
         BankAccount account = bankreposi.findByAccountNumber(accountNumber).orElseThrow(() -> new AccountNotFoundException("There isn't any account like that"));
         BankAccountResponseDto dto = new BankAccountResponseDto();
@@ -65,7 +65,7 @@ public class BankService {
 
         return dto;
     }
-
+    @Transactional
     public BankAccountResponseDto createAccount(String name, String accountNumber){
         BankAccount bankAccount = new BankAccount();
         BankAccountResponseDto dto = new BankAccountResponseDto();
@@ -75,9 +75,13 @@ public class BankService {
             throw new IllegalArgumentException("Name shouldn't be null ");
         }
         bankAccount.setName(name);
-        if(accountNumber == null || accountNumber.isEmpty()){
+        if(accountNumber == null || accountNumber.isBlank()){
             log.warn("Nothing was entered");
             throw new IllegalArgumentException("It shouldn't be empty");
+        }
+        if(bankreposi.findByAccountNumber(accountNumber).isPresent()){
+            log.warn("Account Number exists !");
+            throw new AccountAlreadyExistsException("This accountNumber exists on system. ");
         }
         bankAccount.setAccountNumber(accountNumber);
         bankreposi.save(bankAccount);

@@ -1,5 +1,6 @@
-package com.example.bankservice;
+package com.example.bankservice.repo;
 
+import com.example.bankservice.entity.BankAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
