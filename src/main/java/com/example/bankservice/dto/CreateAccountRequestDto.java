@@ -1,9 +1,7 @@
-package com.example.bankservice;
-
-import org.antlr.v4.runtime.misc.NotNull;
+package com.example.bankservice.dto;
 
 public class CreateAccountRequestDto {
-    @NotNull
+
     private String name;
     private String accountNumber;
 

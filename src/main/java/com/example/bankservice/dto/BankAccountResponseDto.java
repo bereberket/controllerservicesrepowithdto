@@ -1,4 +1,4 @@
-package com.example.bankservice;
+package com.example.bankservice.dto;
 
 
 

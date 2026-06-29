@@ -1,6 +1,11 @@
-package com.example.bankservice;
+package com.example.bankservice.controller;
 
 
+import com.example.bankservice.dto.BankAccountResponseDto;
+import com.example.bankservice.entity.BankAccount;
+import com.example.bankservice.service.BankService;
+import com.example.bankservice.dto.CreateAccountRequestDto;
+import com.example.bankservice.exception.InvalidAmountException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,6 +38,11 @@ public class BankController {
         BankAccountResponseDto account = bankService.createAccount(request.getName(), request.getAccountNumber());
         return  ResponseEntity.ok(account);
     }
+    @GetMapping("/api/accounts/{accountNumber}")
 
+    public ResponseEntity<BankAccountResponseDto> getAccount(@PathVariable String accountNumber){
+        BankAccountResponseDto account = bankService.getAccount(accountNumber);
+        return ResponseEntity.ok(account);
+    }
 }
 

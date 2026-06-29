@@ -1,5 +1,12 @@
-package com.example.bankservice;
+package com.example.bankservice.service;
 
+import com.example.bankservice.dto.BankAccountResponseDto;
+import com.example.bankservice.entity.BankAccount;
+import com.example.bankservice.exception.AccountAlreadyExistsException;
+import com.example.bankservice.exception.AccountNotFoundException;
+import com.example.bankservice.exception.InsufficientBalanceException;
+import com.example.bankservice.exception.InvalidAmountException;
+import com.example.bankservice.repository.BankRepo;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,12 +22,19 @@ public class BankService {
     public BankService(BankRepo bankreposi) {
         this.bankreposi = bankreposi;
     }            //burada da constructor injeciton var.
+    private BankAccountResponseDto convertToDto(BankAccount account) {
+        BankAccountResponseDto dto = new BankAccountResponseDto();
+        dto.setName(account.getName());
+        dto.setAccountNumber(account.getAccountNumber());
+        dto.setBalance(account.getBalance());
+        return dto;
+    }
     @Transactional
     public BankAccountResponseDto withdraw(String accountNumber, double amount) {
         log.info("Withdraw operation started. Account Number: {}, Amount of Withdraw: {}", accountNumber, amount);
         if(amount<=0){
             log.warn("Invalid amount. Please enter valid numbers !");
-            throw new RuntimeException("Enter valid number");
+            throw new InvalidAmountException("Enter valid number");
         }
         BankAccount account = bankreposi.findByAccountNumber(accountNumber)
                 .orElseThrow(() -> {
@@ -29,7 +43,6 @@ public class BankService {
 
                 });
 
-        BankAccountResponseDto dto = new BankAccountResponseDto();
         if(account.getBalance()< amount){
             log.warn("Unsufficient balance!");
             String InfoMessage = String.format("Your balance is insufficient for this. You should deposit %.2f TL for this operation. Account Number: %s, Current Balance: %.2f TL",
@@ -41,34 +54,25 @@ public class BankService {
         account.setBalance(newBalance);
         bankreposi.save(account);
         log.info("Your operation is successful. Account Number: {}, Current Balance: {}", accountNumber, account.getBalance());
-        dto.setAccountNumber(account.getAccountNumber());
-        dto.setBalance(account.getBalance());
-        dto.setName(account.getName());
-        return dto;
+        return  convertToDto(account);
     }
     @Transactional
-    public BankAccountResponseDto deposit(String accountNumber, double depositAmuont) throws InvalidAmountException {
-        log.info("Deposit operation started. Account Number: {}, Amount of Deposit: {}", accountNumber, depositAmuont);
-        if(depositAmuont<=0){
+    public BankAccountResponseDto deposit(String accountNumber, double depositAmount){
+        log.info("Deposit operation started. Account Number: {}, Amount of Deposit: {}", accountNumber, depositAmount);
+        if(depositAmount<=0){
             log.warn("Zero or smaller number! ");
             throw new InvalidAmountException("Amount must be greater than zero");
         }
         BankAccount account = bankreposi.findByAccountNumber(accountNumber).orElseThrow(() -> new AccountNotFoundException("There isn't any account like that"));
-        BankAccountResponseDto dto = new BankAccountResponseDto();
-        double newBalanceDepo = account.getBalance() + depositAmuont;
+        double newBalanceDepo = account.getBalance() + depositAmount;
         account.setBalance(newBalanceDepo);
         bankreposi.save(account);
         log.info("Deposit operation is successful. Account Number : {}, Current Balance: {} ", accountNumber, account.getBalance());
-        dto.setBalance(account.getBalance());
-        dto.setName(account.getName());
-        dto.setAccountNumber(account.getAccountNumber());
-
-        return dto;
+        return convertToDto(account);
     }
     @Transactional
     public BankAccountResponseDto createAccount(String name, String accountNumber){
         BankAccount bankAccount = new BankAccount();
-        BankAccountResponseDto dto = new BankAccountResponseDto();
         bankAccount.setBalance(0.0);
         if(name == null || name.isEmpty()){
             log.warn("Nothing was entered");
@@ -86,11 +90,18 @@ public class BankService {
         bankAccount.setAccountNumber(accountNumber);
         bankreposi.save(bankAccount);
         log.info("Account created successfully. Account Number: {}, Balance: {}", accountNumber, bankAccount.getBalance());
-        dto.setName(bankAccount.getName());
-        dto.setAccountNumber(bankAccount.getAccountNumber());
-        dto.setBalance(bankAccount.getBalance());
-        return dto;
+        return convertToDto(bankAccount);
     }
+    @Transactional(readOnly = true)
+    public BankAccountResponseDto getAccount(String accountNumber){
+        BankAccount bankAccount = bankreposi.findByAccountNumber(accountNumber).orElseThrow(() -> {
+        log.warn("Account doesn't exist");
+        return new AccountNotFoundException("Account doesn't exist");
+        });
+        return convertToDto(bankAccount);
+    }
+
+
     
 
 

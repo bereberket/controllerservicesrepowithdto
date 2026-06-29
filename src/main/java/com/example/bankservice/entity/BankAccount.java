@@ -1,4 +1,4 @@
-package com.example.bankservice;
+package com.example.bankservice.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -15,7 +15,6 @@ public class BankAccount {
     private String name;
     private double balance;
     private String accountNumber;
-    @Override
     public boolean equals(Object o){
         if(this == o){ return true;}
         if(o == null || getClass() != o.getClass()){
@@ -25,7 +24,7 @@ public class BankAccount {
         return accountNumber.equals(that.accountNumber);
 
     }
-    @Override
+
     public int hashCode(){
         return accountNumber.hashCode();
     }

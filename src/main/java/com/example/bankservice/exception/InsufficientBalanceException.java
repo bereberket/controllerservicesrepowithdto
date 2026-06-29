@@ -1,4 +1,4 @@
-package com.example.bankservice;
+package com.example.bankservice.exception;
 
 public class InsufficientBalanceException extends RuntimeException{
     public InsufficientBalanceException(String message){
