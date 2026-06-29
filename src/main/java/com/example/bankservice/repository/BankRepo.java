@@ -8,7 +8,8 @@ import  java.util.Optional;
 
 public interface BankRepo extends JpaRepository<BankAccount, Long> {
     List<BankAccount> findByName(String name);
-    Optional<BankAccount> findByAccountNumber(String AccountNumber);
-
+    Optional<BankAccount> findByAccountNumber(String accountNumber);
+    List<BankAccount> findByBalanceGreaterThan(double minBalance);
 
 }
+

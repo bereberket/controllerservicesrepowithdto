@@ -1,20 +1,25 @@
 package com.example.bankservice.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 @Entity
+@Table(name = "BANK_ACCOUNT")
 
 public class BankAccount {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
 
     private long id;
+    @Column(name = "NAME", nullable = false)
     private String name;
+
+    @Column(nullable = false)
     private double balance;
+
+    @Column(name = "ACCOUNT_NUMBER", nullable = false,unique = true)
     private String accountNumber;
+
+
     public boolean equals(Object o){
         if(this == o){ return true;}
         if(o == null || getClass() != o.getClass()){

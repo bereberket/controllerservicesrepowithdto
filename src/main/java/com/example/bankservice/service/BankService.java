@@ -12,6 +12,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 public class BankService {
 
@@ -102,7 +105,39 @@ public class BankService {
     }
 
 
-    
+    @Transactional
+    public void deleteAccount(String accountNumber){
+        BankAccount bankAccount = bankreposi.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> {
+                    log.warn("Account doesn't exist. Account Number: {}", accountNumber);
+                    return new AccountNotFoundException("Account doesn't exist");
+                });
+
+        bankreposi.delete(bankAccount);
+    }
+    @Transactional(readOnly = true)
+    public BankAccountResponseDto getAllAccounts(String accountNumber){
+        BankAccount bankAccount = (BankAccount) bankreposi.findAll()
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+
+
+        return null;
+    }
+
+
+    public List<BankAccountResponseDto> getAllAccounts() {
+    return null;
+    }
+
+    @Transactional(readOnly = true)
+
+    public List<BankAccountResponseDto> getAccountsWithBalanceGreaterThan(double minBalance) {
+        List<BankAccountResponseDto> account = bankreposi.findByBalanceGreaterThan(minBalance)
+                .stream().map(this::convertToDto).toList();
+        return null;
+    }
 
 
 }
