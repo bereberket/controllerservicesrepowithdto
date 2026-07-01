@@ -1,13 +1,23 @@
 package com.example.bankservice.exception;
 
 import com.example.bankservice.dto.ErrorResponseDto;
+import com.example.bankservice.entity.BankAccount;
+import com.example.bankservice.service.BankService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.Objects;
+
 @RestControllerAdvice
+
+
 public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     @ExceptionHandler(InsufficientBalanceException.class)
     public ResponseEntity<ErrorResponseDto> handleInsufficientBalanceException(InsufficientBalanceException e
     ){
@@ -62,6 +72,24 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.badRequest().body(error);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponseDto> handleValidation(MethodArgumentNotValidException exception){
+        String message = Objects.requireNonNull(exception.getBindingResult()
+                        .getFieldError())
+                .getDefaultMessage();
+
+
+        ErrorResponseDto error = new ErrorResponseDto(
+                exception.getMessage(),
+                400,
+                "Bad Request"
+
+        );
+        log.warn("Validation unsuccess. {}", message);
+        return ResponseEntity.badRequest().body(error);
+
     }
 }
 

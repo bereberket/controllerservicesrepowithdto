@@ -1,8 +1,13 @@
 package com.example.bankservice.dto;
+import jakarta.validation.constraints.NotBlank;
+
+
 
 public class CreateAccountRequestDto {
-
+    @NotBlank(message = "Name shouldn't be null")
     private String name;
+
+    @NotBlank(message = "Account Number shouldn't be null")
     private String accountNumber;
 
     public String getName() { return name; }

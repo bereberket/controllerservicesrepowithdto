@@ -3,20 +3,20 @@ package com.example.bankservice.entity;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "BANK_ACCOUNT")
+@Table
 
 public class BankAccount {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
 
     private long id;
-    @Column(name = "NAME", nullable = false)
+    @Column(name = "NAMELY", nullable = false)
     private String name;
 
     @Column(nullable = false)
     private double balance;
 
-    @Column(name = "ACCOUNT_NUMBER", nullable = false,unique = true)
+    @Column(nullable = false,unique = true)
     private String accountNumber;
 
 
