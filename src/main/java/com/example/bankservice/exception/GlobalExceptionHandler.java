@@ -1,8 +1,6 @@
 package com.example.bankservice.exception;
 
 import com.example.bankservice.dto.ErrorResponseDto;
-import com.example.bankservice.entity.BankAccount;
-import com.example.bankservice.service.BankService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;

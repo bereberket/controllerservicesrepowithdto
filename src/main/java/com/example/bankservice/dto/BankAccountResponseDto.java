@@ -1,6 +1,10 @@
 package com.example.bankservice.dto;
 
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 
 public class BankAccountResponseDto {
 
@@ -9,43 +13,5 @@ public class BankAccountResponseDto {
     private double balance;
 
     private String accountNumber;
-
-
-
-    public String getName(){
-
-        return name;
-
-    }
-
-    public double getBalance(){
-
-        return balance;
-
-    }
-
-    public String getAccountNumber(){
-
-        return accountNumber;
-
-    }
-
-    public void setBalance(double balance){
-
-        this.balance = balance;
-
-    }
-
-    public void setName(String name){
-
-        this.name = name;
-
-    }
-
-    public void setAccountNumber(String accountNumber){
-
-        this.accountNumber = accountNumber;
-
-    }
 
 }

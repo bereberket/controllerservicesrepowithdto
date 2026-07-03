@@ -74,6 +74,7 @@ public class BankService {
     public BankAccountResponseDto createAccount(String name, String accountNumber){
         BankAccount bankAccount = new BankAccount();
         bankAccount.setBalance(0.0);
+        bankAccount.setName(name);
 
         if(reposition.findByAccountNumber(accountNumber).isPresent()){
             log.warn("Account Number exists !");
