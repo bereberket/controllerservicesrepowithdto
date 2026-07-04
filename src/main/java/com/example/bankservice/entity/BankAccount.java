@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+
+
 @Getter
 @Setter
 
@@ -13,8 +15,14 @@ import lombok.Setter;
 public class BankAccount {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-
     private long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "USER_ID")
+    private AppUser appUser;
+
+
+
     @Column(name = "NAMELY", nullable = false)
     private String name;
 
