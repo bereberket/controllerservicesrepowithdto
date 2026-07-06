@@ -1,13 +1,17 @@
 package com.example.bankservice.service;
 
 import com.example.bankservice.dto.BankAccountResponseDto;
+import com.example.bankservice.entity.AppUser;
 import com.example.bankservice.entity.BankAccount;
 import com.example.bankservice.exception.AccountAlreadyExistsException;
 import com.example.bankservice.exception.AccountNotFoundException;
 import com.example.bankservice.exception.InsufficientBalanceException;
 import com.example.bankservice.exception.InvalidAmountException;
 import com.example.bankservice.mapper.BankAccountMapper;
+import com.example.bankservice.repository.AppUserRepository;
 import com.example.bankservice.repository.BankRepo;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,11 +26,12 @@ public class BankService {
     private static final Logger log = LoggerFactory.getLogger(BankService.class);
 
     private final BankRepo reposition;
+    private final AppUserRepository appUserRepository;
 
 
-
-    public BankService(BankRepo reposition) {
+    public BankService(BankRepo reposition,AppUserRepository appUserRepository) {
         this.reposition = reposition;
+        this.appUserRepository = appUserRepository;
     }            //burada da constructor injeciton var.
 
     @Transactional
@@ -71,7 +76,9 @@ public class BankService {
         return  BankAccountMapper.toDto(account);
     }
     @Transactional
-    public BankAccountResponseDto createAccount(String name, String accountNumber){
+    public BankAccountResponseDto createAccount(String name, String accountNumber,String username){
+        AppUser appUser = appUserRepository.findByUsername(username).orElseThrow(() -> new AccountNotFoundException("User doesn't find "));
+        
         BankAccount bankAccount = new BankAccount();
         bankAccount.setBalance(0.0);
         bankAccount.setName(name);
@@ -81,6 +88,7 @@ public class BankService {
             throw new AccountAlreadyExistsException("This accountNumber exists on system. ");
         }
         bankAccount.setAccountNumber(accountNumber);
+        bankAccount.setAppUser(appUser);
         reposition.save(bankAccount);
         log.info("Account created successfully. Account Number: {}, Balance: {}", accountNumber, bankAccount.getBalance());
         return  BankAccountMapper.toDto(bankAccount);
@@ -106,14 +114,9 @@ public class BankService {
         reposition.delete(bankAccount);
     }
     @Transactional(readOnly = true)
-    public List<BankAccountResponseDto> getAllAccounts(){
-        return reposition.findAll()
-                .stream()
-                .map(BankAccountMapper::toDto)
-                .collect(Collectors.toList());
-
-
-
+    public Page<BankAccountResponseDto> getAllAccounts(Pageable pageable){
+        return reposition.findAll(pageable)
+                .map(BankAccountMapper::toDto);
     }
 
 

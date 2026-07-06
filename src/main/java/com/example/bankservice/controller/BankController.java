@@ -6,6 +6,10 @@ import com.example.bankservice.service.BankService;
 import com.example.bankservice.dto.CreateAccountRequestDto;
 import com.example.bankservice.exception.InvalidAmountException;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -39,7 +43,7 @@ public class BankController {
 
     public ResponseEntity<BankAccountResponseDto> createAccount(@Valid @RequestBody CreateAccountRequestDto request) {
 
-        BankAccountResponseDto account = bankService.createAccount(request.getName(), request.getAccountNumber());
+        BankAccountResponseDto account = bankService.createAccount(request.getName(), request.getAccountNumber(), request.getUserName());
         return ResponseEntity.ok(account);
     }
 
@@ -56,9 +60,25 @@ public class BankController {
         return ResponseEntity.noContent().build();
     }
 
+
     @GetMapping("/all")
-    public ResponseEntity<List<BankAccountResponseDto>> getAllAccounts() {
-        List<BankAccountResponseDto> accounts = bankService.getAllAccounts();
+    public ResponseEntity<Page<BankAccountResponseDto>> getAllAccounts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction
+    ) {
+        Sort sort = direction.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+
+        Pageable pageable = PageRequest.of(page,size,sort);
+
+        Page <BankAccountResponseDto> accounts =
+                bankService.getAllAccounts(pageable);
+
+
+
         return ResponseEntity.ok(accounts);
     }
 

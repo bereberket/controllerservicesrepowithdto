@@ -1,8 +1,8 @@
 package com.example.bankservice.dto;
 
 public class AuthenticateDto {
-    public String message;
-    public String username;
+    private final String message;
+    private final String username;
 
     public AuthenticateDto(String message, String username){
         this.message = message;

@@ -1,6 +1,7 @@
 package com.example.bankservice.entity;
 
 import com.example.bankservice.enums.Role;
+import com.example.bankservice.repository.BankRepo;
 import jakarta.persistence.*;
 
 
@@ -8,6 +9,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -21,8 +23,8 @@ public class AppUser {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-
-
+    @OneToMany(mappedBy = "appUser")
+    private List<BankAccount> accounts = new ArrayList<>();
 
     @Column(name = "user_name",nullable = false, unique = true )
     private String username;
