@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -44,7 +45,9 @@ public class BankController {
     public ResponseEntity<BankAccountResponseDto> createAccount(@Valid @RequestBody CreateAccountRequestDto request) {
 
         BankAccountResponseDto account = bankService.createAccount(request.getName(), request.getAccountNumber(), request.getUserName());
-        return ResponseEntity.ok(account);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(account);
     }
 
     @GetMapping("{accountNumber}/getAccount")
@@ -68,11 +71,28 @@ public class BankController {
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "asc") String direction
     ) {
-        Sort sort = direction.equalsIgnoreCase("desc")
-                ? Sort.by(sortBy).descending()
-                : Sort.by(sortBy).ascending();
+        Sort.Direction sortDirection;
+               if(direction.equalsIgnoreCase("asc")){
+                   sortDirection = Sort.Direction.ASC;
+               }else if(direction.equalsIgnoreCase("desc")){
+                   sortDirection = Sort.Direction.DESC;
+               }else{
+                   throw new IllegalArgumentException("Must be ASC or DESC");
+               }
 
-        Pageable pageable = PageRequest.of(page,size,sort);
+        List<String> allowedSortFields = List.of("id", "name", "balance","accountNumber");
+
+        if(!allowedSortFields.contains(sortBy)){
+            throw new IllegalArgumentException("Invalid sort parameter");
+        }
+        if(page<0){
+            throw new IllegalArgumentException("Must be positive");
+        }
+        if(size<1 || size>100){
+            throw new IllegalArgumentException("Page size must be between 1 and 100");
+        }
+
+        Pageable pageable = PageRequest.of(page,size,sortDirection);
 
         Page <BankAccountResponseDto> accounts =
                 bankService.getAllAccounts(pageable);

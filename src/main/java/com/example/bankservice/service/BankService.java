@@ -10,6 +10,8 @@ import com.example.bankservice.exception.InvalidAmountException;
 import com.example.bankservice.mapper.BankAccountMapper;
 import com.example.bankservice.repository.AppUserRepository;
 import com.example.bankservice.repository.BankRepo;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,6 +38,7 @@ public class BankService {
     }            //burada da constructor injeciton var.
 
     @Transactional
+    @CacheEvict(value = "accounts", key = "#accountNumber")
     public BankAccountResponseDto withdraw(String accountNumber, double amount) {
         log.info("Withdraw operation started. Account Number: {}, Amount of Withdraw: {}", accountNumber, amount);
         if(amount<=0){
@@ -57,11 +61,11 @@ public class BankService {
         }
         double newBalance = account.getBalance() - amount;
         account.setBalance(newBalance);
-        reposition.save(account);
         log.info("Your operation is successful. Account Number: {}, Current Balance: {}", accountNumber, account.getBalance());
         return  BankAccountMapper.toDto(account);
     }
     @Transactional
+    @CacheEvict(value = "accounts", key = "#accountNumber")
     public BankAccountResponseDto deposit(String accountNumber, double depositAmount){
         log.info("Deposit operation started. Account Number: {}, Amount of Deposit: {}", accountNumber, depositAmount);
         if(depositAmount<=0){
@@ -71,7 +75,6 @@ public class BankService {
         BankAccount account = reposition.findByAccountNumber(accountNumber).orElseThrow(() -> new AccountNotFoundException("There isn't any account like that"));
         double newBalanceDepo = account.getBalance() + depositAmount;
         account.setBalance(newBalanceDepo);
-        reposition.save(account);
         log.info("Deposit operation is successful. Account Number : {}, Current Balance: {} ", accountNumber, account.getBalance());
         return  BankAccountMapper.toDto(account);
     }
@@ -93,9 +96,13 @@ public class BankService {
         log.info("Account created successfully. Account Number: {}, Balance: {}", accountNumber, bankAccount.getBalance());
         return  BankAccountMapper.toDto(bankAccount);
     }
+    @Cacheable(value = "accounts", key = "#accountNumber")
     @Transactional(readOnly = true)
     public BankAccountResponseDto getAccount(String accountNumber){
-        BankAccount bankAccount = reposition.findByAccountNumber(accountNumber).orElseThrow(() -> {
+        log.info("Account is being read from database : {}",accountNumber);
+
+        BankAccount bankAccount = reposition.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> {
         log.warn("Account doesn't exist");
         return new AccountNotFoundException("Account doesn't exist");
         });
@@ -110,6 +117,7 @@ public class BankService {
                     log.warn("Account doesn't exist. Account Number: {}", accountNumber);
                     return new AccountNotFoundException("Account doesn't exist");
                 });
+
 
         reposition.delete(bankAccount);
     }
@@ -129,5 +137,17 @@ public class BankService {
         
     }
 
+    @Transactional(readOnly = true)
+    public BankAccountResponseDto getAccFindByName(String name) {
+        BankAccount bankAccount = reposition.findByName(name)
+                .orElseThrow(() -> {
+                    log.warn("Account doesn't exist. Name: {}", name);
+                    return new AccountNotFoundException(
+                            "Account doesn't exist. Name: " + name
+                    );
+                });
+
+        return BankAccountMapper.toDto(bankAccount);
+    }
 
 }

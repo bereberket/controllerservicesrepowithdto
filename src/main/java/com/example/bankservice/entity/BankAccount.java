@@ -18,8 +18,8 @@ public class BankAccount {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "USER_ID")
+    @ManyToOne(fetch = FetchType.LAZY,optional = false)
+    @JoinColumn(name = "USER_ID", nullable = false)
     private AppUser appUser;
 
 
@@ -40,6 +40,10 @@ public class BankAccount {
             return false;
         }
         BankAccount that =(BankAccount)o;
+
+        if(accountNumber == null || that.accountNumber == null){
+            return false;
+        }
         return Objects.equals(accountNumber, that.accountNumber);
 
     }
