@@ -1,5 +1,11 @@
 package com.example.bankservice.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+
 public class ErrorResponseDto {
     private final String message;
     private final int status;
@@ -13,16 +19,7 @@ public class ErrorResponseDto {
 
     }
 
-    public String getMessage(){
-        return message;
-    }
-    public int getStatus() {
-        return status;
-    }
 
-    public String getError() {
-        return error;
-    }
 }
 
 

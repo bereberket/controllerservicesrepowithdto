@@ -15,6 +15,6 @@ public class CreateAccountRequestDto {
     private String accountNumber;
 
     @NotBlank(message = "Username shouldn't be null")
-    private String userName;
+    private String username;
 
 }

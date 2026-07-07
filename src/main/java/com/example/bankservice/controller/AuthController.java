@@ -23,9 +23,9 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<List<AuthenticateDto>> register(
-            @Valid @RequestBody List<RegisterRequestDto> registerRequestDtos
+            @RequestBody List< @Valid RegisterRequestDto> registerRequestDto
     ) {
-        List<AuthenticateDto> responses = registerRequestDtos.stream()
+        List<AuthenticateDto> responses = registerRequestDto.stream()
                 .map(authService::register)
                 .toList();
 

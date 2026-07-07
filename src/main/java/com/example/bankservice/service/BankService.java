@@ -1,6 +1,7 @@
 package com.example.bankservice.service;
 
 import com.example.bankservice.dto.BankAccountResponseDto;
+import com.example.bankservice.dto.CreateAccountRequestDto;
 import com.example.bankservice.entity.AppUser;
 import com.example.bankservice.entity.BankAccount;
 import com.example.bankservice.exception.AccountAlreadyExistsException;
@@ -79,21 +80,21 @@ public class BankService {
         return  BankAccountMapper.toDto(account);
     }
     @Transactional
-    public BankAccountResponseDto createAccount(String name, String accountNumber,String username){
-        AppUser appUser = appUserRepository.findByUsername(username).orElseThrow(() -> new AccountNotFoundException("User doesn't find "));
+    public BankAccountResponseDto createAccount(CreateAccountRequestDto requestDto){
+        AppUser appUser = appUserRepository.findByUsername(requestDto.getUsername()).orElseThrow(() -> new AccountNotFoundException("User doesn't find "));
         
         BankAccount bankAccount = new BankAccount();
         bankAccount.setBalance(0.0);
-        bankAccount.setName(name);
+        bankAccount.setName(requestDto.getName());
 
-        if(reposition.findByAccountNumber(accountNumber).isPresent()){
+        if(reposition.findByAccountNumber(requestDto.getAccountNumber()).isPresent()){
             log.warn("Account Number exists !");
             throw new AccountAlreadyExistsException("This accountNumber exists on system. ");
         }
-        bankAccount.setAccountNumber(accountNumber);
+        bankAccount.setAccountNumber(requestDto.getAccountNumber());
         bankAccount.setAppUser(appUser);
         reposition.save(bankAccount);
-        log.info("Account created successfully. Account Number: {}, Balance: {}", accountNumber, bankAccount.getBalance());
+        log.info("Account created successfully. Account Number: {}, Balance: {}", requestDto.getAccountNumber(), bankAccount.getBalance());
         return  BankAccountMapper.toDto(bankAccount);
     }
     @Cacheable(value = "accounts", key = "#accountNumber")

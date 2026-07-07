@@ -42,14 +42,17 @@ public class BankController {
 
     @PostMapping("createAccount")
 
-    public ResponseEntity<BankAccountResponseDto> createAccount(@Valid @RequestBody CreateAccountRequestDto request) {
+    public ResponseEntity<List<BankAccountResponseDto>> createAccount(
+            @RequestBody List< @Valid CreateAccountRequestDto> requestDto) {
 
-        BankAccountResponseDto account = bankService.createAccount(request.getName(), request.getAccountNumber(), request.getUserName());
+        List<BankAccountResponseDto> responses = requestDto.stream()
+                .map(bankService::createAccount)
+                .toList();
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(account);
-    }
+                .body(responses);
 
+    }
     @GetMapping("{accountNumber}/getAccount")
 
     public ResponseEntity<BankAccountResponseDto> getAccount(@PathVariable String accountNumber) {
