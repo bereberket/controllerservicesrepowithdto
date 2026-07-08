@@ -11,6 +11,7 @@ import com.example.bankservice.exception.InvalidAmountException;
 import com.example.bankservice.mapper.BankAccountMapper;
 import com.example.bankservice.repository.AppUserRepository;
 import com.example.bankservice.repository.BankRepo;
+import org.jspecify.annotations.NonNull;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -80,21 +81,27 @@ public class BankService {
         return  BankAccountMapper.toDto(account);
     }
     @Transactional
-    public BankAccountResponseDto createAccount(CreateAccountRequestDto requestDto){
-        AppUser appUser = appUserRepository.findByUsername(requestDto.getUsername()).orElseThrow(() -> new AccountNotFoundException("User doesn't find "));
-        
+    public BankAccountResponseDto createAccount(@NonNull CreateAccountRequestDto requestDto){
+        AppUser appUser = appUserRepository.findByUsername(requestDto.getUsername()).orElseThrow(() -> new AccountNotFoundException("User not find"));
+        StringBuilder accountNumberBuilder = new StringBuilder();
+
+        accountNumberBuilder.append("TR");
+        accountNumberBuilder.append(requestDto.getAccountNumber());
+        String formattedAccountNumber = accountNumberBuilder.toString();
+
         BankAccount bankAccount = new BankAccount();
         bankAccount.setBalance(0.0);
         bankAccount.setName(requestDto.getName());
 
         if(reposition.findByAccountNumber(requestDto.getAccountNumber()).isPresent()){
             log.warn("Account Number exists !");
-            throw new AccountAlreadyExistsException("This accountNumber exists on system. ");
+            throw new AccountAlreadyExistsException("This account number exists");
         }
-        bankAccount.setAccountNumber(requestDto.getAccountNumber());
+        bankAccount.setAccountNumber(formattedAccountNumber);
         bankAccount.setAppUser(appUser);
         reposition.save(bankAccount);
         log.info("Account created successfully. Account Number: {}, Balance: {}", requestDto.getAccountNumber(), bankAccount.getBalance());
+
         return  BankAccountMapper.toDto(bankAccount);
     }
     @Cacheable(value = "accounts", key = "#accountNumber")
