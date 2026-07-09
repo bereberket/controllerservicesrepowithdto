@@ -95,7 +95,7 @@ public class BankController {
             throw new IllegalArgumentException("Page size must be between 1 and 100");
         }
 
-        Pageable pageable = PageRequest.of(page,size,sortDirection);
+        Pageable pageable = PageRequest.of(page,size,sortDirection,sortBy);
 
         Page <BankAccountResponseDto> accounts =
                 bankService.getAllAccounts(pageable);

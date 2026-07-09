@@ -1972,3 +1972,12 @@ Caused by: java.lang.AssertionError: 22
 	at org.h2.mvstore.FileStore.executeFileStoreOperation(FileStore.java:1894)
 	at org.h2.mvstore.MVStore.executeFilestoreOperation(MVStore.java:1044)
 	... 13 more
+2026-07-09 17:41:57.589359+03:00 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "SELECT * FROM APP_USER \000d\000aINSERT [*]INTO APP_USER(PASSWORD, ROLE, USER_NAME) VALUES\000d\000a(berk1270,ADMIN,mainberk)"; SQL statement:
+SELECT * FROM APP_USER 
+INSERT INTO APP_USER(PASSWORD, ROLE, USER_NAME) VALUES
+(berk1270,ADMIN,mainberk) [42000-240]
+2026-07-09 17:58:56.574467+03:00 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "DELETE FROM APP_USER[*],\000d\000aWHERE NAME = 'mainberk'"; SQL statement:
+DELETE FROM APP_USER,
+WHERE NAME = 'mainberk' [42000-240]
