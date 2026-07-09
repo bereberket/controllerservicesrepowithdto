@@ -22,8 +22,6 @@ public class BankAccount {
     @JoinColumn(name = "USER_ID", nullable = false)
     private AppUser appUser;
 
-
-
     @Column(name = "NAMELY", nullable = false)
     private String name;
 

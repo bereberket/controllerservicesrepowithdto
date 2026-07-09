@@ -39,42 +39,60 @@ public class BankService {
         this.appUserRepository = appUserRepository;
     }            //burada da constructor injeciton var.
 
+    private String formatAccountNumber(String accountNumber){
+        if(accountNumber == null || accountNumber.isBlank()){
+            throw new IllegalArgumentException(
+                    "Account number shouldn't be null"
+            );
+        }
+        String normalized =
+                accountNumber.trim().toUpperCase();
+        if(normalized.startsWith("TR")){
+            return normalized;
+
+        }
+        return "TR" + normalized;
+    }
     @Transactional
-    @CacheEvict(value = "accounts", key = "#accountNumber")
     public BankAccountResponseDto withdraw(String accountNumber, double amount) {
-        log.info("Withdraw operation started. Account Number: {}, Amount of Withdraw: {}", accountNumber, amount);
+        String formattedAccountNumber =
+                formatAccountNumber(accountNumber);
+        log.info("Withdraw operation started. Account Number: {}, Amount of Withdraw: {}", formattedAccountNumber, amount);
         if(amount<=0){
             log.warn("Invalid amount. Please enter valid numbers !");
             throw new InvalidAmountException("Enter valid number");
         }
-        BankAccount account = reposition.findByAccountNumber(accountNumber)
+
+        BankAccount account = reposition.findByAccountNumber(formattedAccountNumber)
                 .orElseThrow(() -> {
-                    log.warn("Error. Account doesn't exist. Account No: {}", accountNumber);
+                    log.warn("Error. Account doesn't exist. Account No: {}", formattedAccountNumber);
                      return new AccountNotFoundException("There isn't any account");
 
                 });
 
         if(account.getBalance()< amount){
             log.warn("Unsufficient balance!");
-            String InfoMessage = String.format("Your balance is insufficient for this. You should deposit %.2f TL for this operation. Account Number: %s, Current Balance: %.2f TL",
-            amount-account.getBalance(),accountNumber,account.getBalance()
+            String infoMessage = String.format("Your balance is insufficient for this. You should deposit %.2f TL for this operation. Account Number: %s, Current Balance: %.2f TL",
+            amount-account.getBalance(),formattedAccountNumber,account.getBalance()
             );
-            throw new InsufficientBalanceException(InfoMessage);
+            throw new InsufficientBalanceException(infoMessage);
         }
         double newBalance = account.getBalance() - amount;
         account.setBalance(newBalance);
-        log.info("Your operation is successful. Account Number: {}, Current Balance: {}", accountNumber, account.getBalance());
+        log.info("Your operation is successful. Account Number: {}, Current Balance: {}", formattedAccountNumber, account.getBalance());
         return  BankAccountMapper.toDto(account);
     }
     @Transactional
-    @CacheEvict(value = "accounts", key = "#accountNumber")
     public BankAccountResponseDto deposit(String accountNumber, double depositAmount){
-        log.info("Deposit operation started. Account Number: {}, Amount of Deposit: {}", accountNumber, depositAmount);
+        String formattedAccountNumber =
+                formatAccountNumber(accountNumber);
+        log.info("Deposit operation started. Account Number: {}, Amount of Deposit: {}",formattedAccountNumber,depositAmount);
+
         if(depositAmount<=0){
             log.warn("Zero or smaller number! ");
             throw new InvalidAmountException("Amount must be greater than zero");
         }
-        BankAccount account = reposition.findByAccountNumber(accountNumber).orElseThrow(() -> new AccountNotFoundException("There isn't any account like that"));
+        BankAccount account = reposition.findByAccountNumber(formattedAccountNumber).orElseThrow(() -> new AccountNotFoundException("There isn't any account like that"));
         double newBalanceDepo = account.getBalance() + depositAmount;
         account.setBalance(newBalanceDepo);
         log.info("Deposit operation is successful. Account Number : {}, Current Balance: {} ", accountNumber, account.getBalance());
@@ -83,33 +101,31 @@ public class BankService {
     @Transactional
     public BankAccountResponseDto createAccount(@NonNull CreateAccountRequestDto requestDto){
         AppUser appUser = appUserRepository.findByUsername(requestDto.getUsername()).orElseThrow(() -> new AccountNotFoundException("User not find"));
-        StringBuilder accountNumberBuilder = new StringBuilder();
-
-        accountNumberBuilder.append("TR");
-        accountNumberBuilder.append(requestDto.getAccountNumber());
-        String formattedAccountNumber = accountNumberBuilder.toString();
+        String formattedAccountNumber =
+                formatAccountNumber(requestDto.getAccountNumber());
 
         BankAccount bankAccount = new BankAccount();
         bankAccount.setBalance(0.0);
         bankAccount.setName(requestDto.getName());
 
-        if(reposition.findByAccountNumber(requestDto.getAccountNumber()).isPresent()){
+        if(reposition.findByAccountNumber(formattedAccountNumber).isPresent()){
             log.warn("Account Number exists !");
             throw new AccountAlreadyExistsException("This account number exists");
         }
         bankAccount.setAccountNumber(formattedAccountNumber);
         bankAccount.setAppUser(appUser);
         reposition.save(bankAccount);
-        log.info("Account created successfully. Account Number: {}, Balance: {}", requestDto.getAccountNumber(), bankAccount.getBalance());
+        log.info("Account created successfully. Account Number: {}, Balance: {}", formattedAccountNumber, bankAccount.getBalance());
 
         return  BankAccountMapper.toDto(bankAccount);
     }
-    @Cacheable(value = "accounts", key = "#accountNumber")
     @Transactional(readOnly = true)
     public BankAccountResponseDto getAccount(String accountNumber){
-        log.info("Account is being read from database : {}",accountNumber);
+        String formattedAccountNumber =
+                formatAccountNumber(accountNumber);
+        log.info("Account is being read from database : {}",formattedAccountNumber);
 
-        BankAccount bankAccount = reposition.findByAccountNumber(accountNumber)
+        BankAccount bankAccount = reposition.findByAccountNumber(formattedAccountNumber)
                 .orElseThrow(() -> {
         log.warn("Account doesn't exist");
         return new AccountNotFoundException("Account doesn't exist");
@@ -120,9 +136,11 @@ public class BankService {
 
     @Transactional
     public void deleteAccount(String accountNumber){
-        BankAccount bankAccount = reposition.findByAccountNumber(accountNumber)
+        String formattedAccountNumber =
+                formatAccountNumber(accountNumber);
+        BankAccount bankAccount = reposition.findByAccountNumber(formattedAccountNumber)
                 .orElseThrow(() -> {
-                    log.warn("Account doesn't exist. Account Number: {}", accountNumber);
+                    log.warn("Account doesn't exist. Account Number: {}", formattedAccountNumber);
                     return new AccountNotFoundException("Account doesn't exist");
                 });
 
