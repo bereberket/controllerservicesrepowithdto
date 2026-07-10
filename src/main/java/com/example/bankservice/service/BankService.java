@@ -99,8 +99,8 @@ public class BankService {
         return  BankAccountMapper.toDto(account);
     }
     @Transactional
-    public BankAccountResponseDto createAccount(@NonNull CreateAccountRequestDto requestDto){
-        AppUser appUser = appUserRepository.findByUsername(requestDto.getUsername()).orElseThrow(() -> new AccountNotFoundException("User not find"));
+    public BankAccountResponseDto createAccount(@NonNull CreateAccountRequestDto requestDto, String authenticatedUserName){
+        AppUser appUser = appUserRepository.findByUsername(authenticatedUserName).orElseThrow(() -> new AccountNotFoundException("User not find"));
         String formattedAccountNumber =
                 formatAccountNumber(requestDto.getAccountNumber());
 

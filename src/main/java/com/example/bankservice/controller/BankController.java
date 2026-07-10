@@ -15,7 +15,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestBody;
 import java.util.List;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.context.request.AsyncWebRequestInterceptor;
 
+import static java.util.stream.Collectors.toList;
 
 @RestController
 @RequestMapping("/api/accounts/")
@@ -43,18 +46,22 @@ public class BankController {
     @PostMapping("createAccount")
 
     public ResponseEntity<List<BankAccountResponseDto>> createAccount(
-            @RequestBody List< @Valid CreateAccountRequestDto> requestDto) {
+            @RequestBody List< @Valid CreateAccountRequestDto> requestDto,
+            Authentication authentication) {
+
+        String username = authentication.getName();
+
 
         List<BankAccountResponseDto> responses = requestDto.stream()
-                .map(bankService::createAccount)
+                .map(dto -> bankService.createAccount(dto,username))
                 .toList();
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(responses);
 
     }
-    @GetMapping("{accountNumber}/getAccount")
 
+    @GetMapping("{accountNumber}/getAccount")
     public ResponseEntity<BankAccountResponseDto> getAccount(@PathVariable String accountNumber) {
         BankAccountResponseDto account = bankService.getAccount(accountNumber);
         return ResponseEntity.ok(account);
