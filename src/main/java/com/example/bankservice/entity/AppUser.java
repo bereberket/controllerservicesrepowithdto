@@ -26,7 +26,7 @@ public class AppUser {
     @OneToMany(mappedBy = "appUser")
     private List<BankAccount> accounts = new ArrayList<>();
 
-    @Column(name = "user_name",nullable = false, unique = true )
+    @Column(name = "user_name", nullable = false, unique = true )
     private String username;
 
     @Column(name = "password", nullable = false)

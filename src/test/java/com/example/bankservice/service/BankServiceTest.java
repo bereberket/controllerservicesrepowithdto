@@ -37,6 +37,7 @@ public class BankServiceTest {
 
     private CreateAccountRequestDto requestDto;
     private AppUser appUser;
+    private static final String authenticatedUserName = "Berk";
 
     @BeforeEach
     void setUp(){
@@ -45,14 +46,15 @@ public class BankServiceTest {
         requestDto.setName("Ana Hesap");
 
         appUser = new AppUser();
+        appUser.setUsername(authenticatedUserName);
         appUser.setId(39L);
 
     }
     @ParameterizedTest
     @ValueSource(strings = {""," ", "  "})
     @DisplayName("Invalid usernames should reject")
-    void createAccount_shouldRejectBlankUsername(String username){
-        requestDto.setUsername(username);
+    void createAccount_shouldRejectBlankUsername(String authenticatedUserName){
+        requestDto.setUsername(authenticatedUserName);
         requestDto.setAccountNumber("99");
     }
 
@@ -60,12 +62,12 @@ public class BankServiceTest {
     @DisplayName("If user exists and acc. number unique then account should create.!!")
     void createAccount_shouldCreateAccount_whenUserExistsAndAccountNumberIsUnique(){
 
-        requestDto.setUsername("Berk");
+
         requestDto.setAccountNumber("123");
 
         appUser.setUsername("Berk");
 
-        when(appUserRepository.findByUsername("Berk"))
+        when(appUserRepository.findByUsername(authenticatedUserName))
                 .thenReturn(Optional.of(appUser));
         when(bankRepo.findByAccountNumber("TR123"))
                 .thenReturn(Optional.empty());
@@ -73,7 +75,7 @@ public class BankServiceTest {
         //ACT
 
         BankAccountResponseDto result =                  // result atadım çünkü assert bölümünde DTO'nun alanlarını
-                bankService.createAccount(requestDto, "integration user");   // doğrulamam gerek.
+                bankService.createAccount(requestDto, "Berk");   // doğrulamam gerek.
         assertEquals("Ana Hesap", result.getName());
         assertEquals("TR123", result.getAccountNumber());
         assertEquals(0.0, result.getBalance());
@@ -97,25 +99,20 @@ public class BankServiceTest {
     @DisplayName("If user not exist, should throw AccountNotFoundException")
     void createAccount_shouldThrowException_whenUserDoesNotExist(){
 
-        requestDto.setUsername("test");
-
         requestDto.setAccountNumber("149");
 
-
-
-
-        when(appUserRepository.findByUsername("test"))
+        when(appUserRepository.findByUsername(authenticatedUserName))
                 .thenReturn(Optional.empty());
 
         AccountNotFoundException exception = assertThrows(
                 AccountNotFoundException.class,
-                () -> bankService.createAccount(requestDto, ",integration user")
+                () -> bankService.createAccount(requestDto, "Berk")
         );
 
         assertEquals("User not find", exception.getMessage());
 
         verify(appUserRepository)
-                .findByUsername("test");
+                .findByUsername(authenticatedUserName);
 
         verify(bankRepo, never())
                 .findByAccountNumber(anyString());
@@ -130,15 +127,14 @@ public class BankServiceTest {
     @DisplayName("If account already exists, should throw AccountAlreadyExists")
     void createAccount_shouldThrowException_whenAccountAlreadyExists(){
 
-        requestDto.setUsername("test");
         requestDto.setAccountNumber("149");
 
-        appUser.setUsername("test");
+        appUser.setUsername("Berk");
 
         BankAccount existingAccount = new BankAccount();
         existingAccount.setAccountNumber("TR149");
 
-        when(appUserRepository.findByUsername("test"))
+        when(appUserRepository.findByUsername(authenticatedUserName))
                 .thenReturn(Optional.of(appUser));
 
         when(bankRepo.findByAccountNumber("TR149"))
@@ -146,7 +142,7 @@ public class BankServiceTest {
 
         AccountAlreadyExistsException exception = assertThrows(
                 AccountAlreadyExistsException.class,
-                () -> bankService.createAccount(requestDto,"integration user")
+                () -> bankService.createAccount(requestDto,"Berk")
         );
 
         assertEquals(
@@ -155,7 +151,7 @@ public class BankServiceTest {
         );
 
         verify(appUserRepository)
-                .findByUsername("test");
+                .findByUsername(authenticatedUserName);
 
         verify(bankRepo)
                 .findByAccountNumber("TR149");

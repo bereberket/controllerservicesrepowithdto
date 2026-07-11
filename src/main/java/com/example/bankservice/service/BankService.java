@@ -34,6 +34,7 @@ public class BankService {
     private final AppUserRepository appUserRepository;
 
 
+
     public BankService(BankRepo reposition,AppUserRepository appUserRepository) {
         this.reposition = reposition;
         this.appUserRepository = appUserRepository;

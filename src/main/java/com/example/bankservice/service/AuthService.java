@@ -32,7 +32,6 @@ public class AuthService {
             throw new IllegalArgumentException("Name already exists.");
         }
         AppUser appUser = new AppUser();
-        appUser.setUsername(request.getUsername());
         appUser.setPassword(passwordEncoder.encode(request.getPassword()));
         appUser.setRole(Role.CUSTOMER);
         appUserRepository.save(appUser);
