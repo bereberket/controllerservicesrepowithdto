@@ -2,6 +2,7 @@ package com.example.bankservice.controller;
 
 
 import com.example.bankservice.dto.BankAccountResponseDto;
+import com.example.bankservice.service.AuthService;
 import com.example.bankservice.service.BankService;
 import com.example.bankservice.dto.CreateAccountRequestDto;
 import com.example.bankservice.exception.InvalidAmountException;
@@ -24,10 +25,12 @@ import static java.util.stream.Collectors.toList;
 @RequestMapping("/api/accounts/")
 public class BankController {
     private final BankService bankService;
+    private final AuthService authService;
 
 
-    public BankController(BankService bankService) {                           // constructor injection
+    public BankController(BankService bankService, AuthService authService) {                           // constructor injection
         this.bankService = bankService;
+        this.authService = authService;
     }
 
     @PostMapping("{accountNumber}/withdraw")
@@ -118,6 +121,11 @@ public class BankController {
         List<BankAccountResponseDto> accounts = bankService.getAccountsWithBalanceGreaterThan(minBalance);
         return ResponseEntity.ok(accounts);
 
+    }
+    @DeleteMapping("/deleteuser/{userName}")
+    public ResponseEntity<Void> deleteUser(@PathVariable String userName){
+        bankService.deleteUser(userName);
+        return ResponseEntity.noContent().build();
     }
 }
 

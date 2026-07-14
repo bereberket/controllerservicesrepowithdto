@@ -16,6 +16,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -176,5 +177,19 @@ public class BankService {
 
         return BankAccountMapper.toDto(bankAccount);
     }
+    @Transactional
+    public void deleteUser(String userName){
 
+        AppUser appUser = appUserRepository.findByUsername(userName)
+                .orElseThrow(() -> {
+            log.warn("User not found");
+            return new UsernameNotFoundException("User not find");
+
+        });
+
+        appUserRepository.delete(appUser);
+
+
+
+    }
 }

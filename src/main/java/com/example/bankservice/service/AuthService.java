@@ -3,6 +3,7 @@ package com.example.bankservice.service;
 import com.example.bankservice.dto.AuthenticateDto;
 import com.example.bankservice.dto.LoginRequestDto;
 import com.example.bankservice.dto.RegisterRequestDto;
+import com.example.bankservice.enums.ActiveSituation;
 import com.example.bankservice.enums.Role;
 import com.example.bankservice.repository.AppUserRepository;
 import org.slf4j.Logger;
@@ -11,6 +12,8 @@ import com.example.bankservice.entity.AppUser;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import static com.example.bankservice.enums.ActiveSituation.ACTIVE;
 
 @Service
 
@@ -32,6 +35,7 @@ public class AuthService {
             throw new IllegalArgumentException("Name already exists.");
         }
         AppUser appUser = new AppUser();
+        appUser.setUsername(request.getUsername());
         appUser.setPassword(passwordEncoder.encode(request.getPassword()));
         appUser.setRole(Role.CUSTOMER);
         appUserRepository.save(appUser);
@@ -45,6 +49,10 @@ public class AuthService {
                     log.warn("Incorrect username");
                     return  new IllegalArgumentException("Incorrect username or password");
                 });
+        if(appUser.getState() != ActiveSituation.ACTIVE){
+            log.warn("inactive user!");
+            throw new IllegalStateException("Your accounts are inactive");
+        }
         if(!passwordEncoder.matches(
                 requestDto.getPassword(),
                 appUser.getPassword()

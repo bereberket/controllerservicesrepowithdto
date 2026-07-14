@@ -89,6 +89,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(error);
 
     }
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponseDto> handleIllegalStateException(IllegalStateException exception){
+        ErrorResponseDto error = new ErrorResponseDto(
+                exception.getMessage(),
+                403,
+                "Forbidden"
+        );
+
+        log.warn("Bad User State");
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+
+    }
 }
 
 

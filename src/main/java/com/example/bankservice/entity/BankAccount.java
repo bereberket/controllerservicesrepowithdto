@@ -1,5 +1,6 @@
 package com.example.bankservice.entity;
 
+import com.example.bankservice.enums.ActiveSituation;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

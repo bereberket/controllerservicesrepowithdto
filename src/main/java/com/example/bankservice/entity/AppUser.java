@@ -1,5 +1,6 @@
 package com.example.bankservice.entity;
 
+import com.example.bankservice.enums.ActiveSituation;
 import com.example.bankservice.enums.Role;
 import com.example.bankservice.repository.BankRepo;
 import jakarta.persistence.*;
@@ -23,8 +24,17 @@ public class AppUser {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @OneToMany(mappedBy = "appUser")
+    @OneToMany(
+            mappedBy = "appUser",
+            cascade = CascadeType.REMOVE,
+            orphanRemoval = true
+    )
     private List<BankAccount> accounts = new ArrayList<>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "CurrentState", nullable = false)
+    private ActiveSituation state;
+
 
     @Column(name = "user_name", nullable = false, unique = true )
     private String username;
@@ -35,6 +45,8 @@ public class AppUser {
     @Enumerated(EnumType.STRING)
     @Column(name = "Role",nullable = false)
     private Role role;
+
+
     
     
 
