@@ -23,6 +23,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import com.example.bankservice.enums.ActiveSituation;
 
 @ExtendWith(MockitoExtension.class)
 public class BankServiceTest {
@@ -162,7 +163,5 @@ public class BankServiceTest {
 
 
     }
-
-
 
 }

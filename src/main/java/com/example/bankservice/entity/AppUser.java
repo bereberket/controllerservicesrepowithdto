@@ -33,7 +33,8 @@ public class AppUser {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "CurrentState", nullable = false)
-    private ActiveSituation state;
+    private ActiveSituation state = ActiveSituation.ACTIVE;
+
 
 
     @Column(name = "user_name", nullable = false, unique = true )

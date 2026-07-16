@@ -38,6 +38,7 @@ public class AuthService {
         appUser.setUsername(request.getUsername());
         appUser.setPassword(passwordEncoder.encode(request.getPassword()));
         appUser.setRole(Role.CUSTOMER);
+        appUser.setState(ActiveSituation.ACTIVE);
         appUserRepository.save(appUser);
         return new AuthenticateDto("Registration successful",request.getUsername());
     }

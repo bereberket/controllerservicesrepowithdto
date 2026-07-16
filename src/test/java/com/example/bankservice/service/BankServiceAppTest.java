@@ -14,6 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import static org.junit.jupiter.api.Assertions.*;
+import com.example.bankservice.enums.ActiveSituation;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -45,6 +46,7 @@ public class BankServiceAppTest {
         appUser.setUsername("integrasyon user");
         appUser.setPassword("berk10");
         appUser.setRole(Role.CUSTOMER);
+        appUser.setState(ActiveSituation.ACTIVE);
 
         appUserRepository.save(appUser);
 
@@ -76,11 +78,13 @@ public class BankServiceAppTest {
 
     }
     @Test
+    @Transactional
     void createAccount_shouldThrowException_whenAccountNumberAlreadyExists(){
         AppUser appUser = new AppUser();
         appUser.setUsername("berko");
         appUser.setRole(Role.CUSTOMER);
         appUser.setPassword("berk10");
+        appUser.setState(ActiveSituation.ACTIVE);
 
         appUserRepository.save(appUser);
 

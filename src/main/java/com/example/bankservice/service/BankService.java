@@ -11,7 +11,6 @@ import com.example.bankservice.exception.InvalidAmountException;
 import com.example.bankservice.mapper.BankAccountMapper;
 import com.example.bankservice.repository.AppUserRepository;
 import com.example.bankservice.repository.BankRepo;
-import org.jspecify.annotations.NonNull;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -101,7 +100,7 @@ public class BankService {
         return  BankAccountMapper.toDto(account);
     }
     @Transactional
-    public BankAccountResponseDto createAccount(@NonNull CreateAccountRequestDto requestDto, String authenticatedUserName){
+    public BankAccountResponseDto createAccount(CreateAccountRequestDto requestDto, String authenticatedUserName){
         AppUser appUser = appUserRepository.findByUsername(authenticatedUserName).orElseThrow(() -> new AccountNotFoundException("User not find"));
         String formattedAccountNumber =
                 formatAccountNumber(requestDto.getAccountNumber());
