@@ -93,7 +93,10 @@ public class BankService {
             log.warn("Zero or smaller number! ");
             throw new InvalidAmountException("Amount must be greater than zero");
         }
-        BankAccount account = reposition.findByAccountNumber(formattedAccountNumber).orElseThrow(() -> new AccountNotFoundException("There isn't any account like that"));
+        BankAccount account = reposition.findByAccountNumber(formattedAccountNumber).orElseThrow(() -> {
+                 log.warn("No User");
+                 throw new AccountNotFoundException("There isn't any account like that");
+                         });
         double newBalanceDepo = account.getBalance() + depositAmount;
         account.setBalance(newBalanceDepo);
         log.info("Deposit operation is successful. Account Number : {}, Current Balance: {} ", accountNumber, account.getBalance());
