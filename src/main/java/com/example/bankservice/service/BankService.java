@@ -9,6 +9,8 @@ import com.example.bankservice.exception.AccountNotFoundException;
 import com.example.bankservice.exception.InsufficientBalanceException;
 import com.example.bankservice.exception.InvalidAmountException;
 import com.example.bankservice.mapper.BankAccountMapper;
+import com.example.bankservice.messaging.AccountCreatedEvent;
+import com.example.bankservice.messaging.AccountCreatedPublisher;
 import com.example.bankservice.repository.AppUserRepository;
 import com.example.bankservice.repository.BankRepo;
 import org.springframework.cache.annotation.CacheEvict;
@@ -21,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -32,12 +35,14 @@ public class BankService {
 
     private final BankRepo reposition;
     private final AppUserRepository appUserRepository;
+    private final AccountCreatedPublisher accountCreatedPublisher;
 
 
 
-    public BankService(BankRepo reposition,AppUserRepository appUserRepository) {
+    public BankService(BankRepo reposition,AppUserRepository appUserRepository,AccountCreatedPublisher accountCreatedPublisher) {
         this.reposition = reposition;
         this.appUserRepository = appUserRepository;
+        this.accountCreatedPublisher = accountCreatedPublisher;
     }            //burada da constructor injeciton var.
 
     private String formatAccountNumber(String accountNumber){
@@ -93,7 +98,10 @@ public class BankService {
             log.warn("Zero or smaller number! ");
             throw new InvalidAmountException("Amount must be greater than zero");
         }
-        BankAccount account = reposition.findByAccountNumber(formattedAccountNumber).orElseThrow(() -> new AccountNotFoundException("There isn't any account like that"));
+        BankAccount account = reposition.findByAccountNumber(formattedAccountNumber).orElseThrow(() -> {
+                 log.warn("No User");
+                 throw new AccountNotFoundException("There isn't any account like that");
+                         });
         double newBalanceDepo = account.getBalance() + depositAmount;
         account.setBalance(newBalanceDepo);
         log.info("Deposit operation is successful. Account Number : {}, Current Balance: {} ", accountNumber, account.getBalance());
@@ -116,7 +124,15 @@ public class BankService {
         bankAccount.setAccountNumber(formattedAccountNumber);
         bankAccount.setAppUser(appUser);
         reposition.save(bankAccount);
-        log.info("Account created successfully. Account Number: {}, Balance: {}", formattedAccountNumber, bankAccount.getBalance());
+
+        AccountCreatedEvent event = new AccountCreatedEvent(
+                formattedAccountNumber,
+                authenticatedUserName,
+                bankAccount.getName(),
+                Instant.now()
+
+        );
+        accountCreatedPublisher.publish(event);
 
         return  BankAccountMapper.toDto(bankAccount);
     }
