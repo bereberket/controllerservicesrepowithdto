@@ -6,6 +6,7 @@ import com.example.bankservice.entity.AppUser;
 import com.example.bankservice.entity.BankAccount;
 import com.example.bankservice.exception.AccountAlreadyExistsException;
 import com.example.bankservice.exception.AccountNotFoundException;
+import com.example.bankservice.messaging.AccountCreatedEvent;
 import com.example.bankservice.messaging.AccountCreatedPublisher;
 import com.example.bankservice.repository.AppUserRepository;
 import com.example.bankservice.repository.BankRepo;
@@ -91,7 +92,6 @@ public class BankServiceTest {
                 ArgumentCaptor.forClass(BankAccount.class);
 
         verify(bankRepo).save(accountArgumentCaptor.capture());
-        verify(accountCreatedPublisher).publish("Account created successfully. Account Number : " + result.getAccountNumber());
         BankAccount savedAccount = accountArgumentCaptor.getValue();
 
         assertEquals("Ana Hesap", savedAccount.getName());
@@ -100,6 +100,18 @@ public class BankServiceTest {
         assertSame(appUser,savedAccount.getAppUser());  // bellekte aynı nesne mi
 
         // verify(bankRepo).save(any(BankAccount.class)); --- >> Parametre kontrolü yapmaz. Yanlış paramatere de kabıl eder
+
+
+        //giden mesajı doğrulamak için
+        ArgumentCaptor<AccountCreatedEvent> eventCaptor =
+                ArgumentCaptor.forClass(AccountCreatedEvent.class);
+        verify(accountCreatedPublisher).publish(eventCaptor.capture());
+
+        AccountCreatedEvent publishedEvent = eventCaptor.getValue();
+        assertEquals("Ana Hesap", publishedEvent.accountName());
+        assertEquals("TR123", publishedEvent.accountNumber());
+        assertEquals(authenticatedUserName, publishedEvent.username());
+        assertNotNull(publishedEvent.createdAt());
 
 
     }

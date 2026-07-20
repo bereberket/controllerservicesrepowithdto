@@ -12,11 +12,11 @@ public class AccountCreatedPublisher {
         this.rabbitTemplate = rabbitTemplate;
     }
 
-    public void publish(String message){
+    public void publish(AccountCreatedEvent createdEvent){
         rabbitTemplate.convertAndSend(
                 RabbitMqConfig.BANK_EVENTS_EXCHANGE,
                 RabbitMqConfig.ACCOUNT_CREATED_ROUTING_KEY,
-                message
+                createdEvent
         );
     }
 

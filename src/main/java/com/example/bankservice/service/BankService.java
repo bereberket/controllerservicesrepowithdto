@@ -9,6 +9,7 @@ import com.example.bankservice.exception.AccountNotFoundException;
 import com.example.bankservice.exception.InsufficientBalanceException;
 import com.example.bankservice.exception.InvalidAmountException;
 import com.example.bankservice.mapper.BankAccountMapper;
+import com.example.bankservice.messaging.AccountCreatedEvent;
 import com.example.bankservice.messaging.AccountCreatedPublisher;
 import com.example.bankservice.repository.AppUserRepository;
 import com.example.bankservice.repository.BankRepo;
@@ -22,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -122,7 +124,15 @@ public class BankService {
         bankAccount.setAccountNumber(formattedAccountNumber);
         bankAccount.setAppUser(appUser);
         reposition.save(bankAccount);
-        accountCreatedPublisher.publish("Account created successfully. Account Number : " + formattedAccountNumber);
+
+        AccountCreatedEvent event = new AccountCreatedEvent(
+                formattedAccountNumber,
+                authenticatedUserName,
+                bankAccount.getName(),
+                Instant.now()
+
+        );
+        accountCreatedPublisher.publish(event);
 
         return  BankAccountMapper.toDto(bankAccount);
     }

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class AccountCreatedListener {
     @RabbitListener(queues = RabbitMqConfig.ACCOUNT_CREATED_QUEUE)
-    public void handle(String message){
-        System.out.println("Rabbit message " + message);
+    public void handle(AccountCreatedEvent createdEvent){
+        System.out.println("Rabbit message " + createdEvent);
     }
 }
