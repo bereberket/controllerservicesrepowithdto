@@ -6,6 +6,7 @@ import com.example.bankservice.entity.AppUser;
 import com.example.bankservice.entity.BankAccount;
 import com.example.bankservice.exception.AccountAlreadyExistsException;
 import com.example.bankservice.exception.AccountNotFoundException;
+import com.example.bankservice.messaging.AccountCreatedPublisher;
 import com.example.bankservice.repository.AppUserRepository;
 import com.example.bankservice.repository.BankRepo;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,8 +34,13 @@ public class BankServiceTest {
     @Mock
     private BankRepo bankRepo;
 
+    @Mock
+    private AccountCreatedPublisher accountCreatedPublisher;
+
     @InjectMocks
     private BankService bankService;
+
+
 
     private CreateAccountRequestDto requestDto;
     private AppUser appUser;
@@ -85,6 +91,7 @@ public class BankServiceTest {
                 ArgumentCaptor.forClass(BankAccount.class);
 
         verify(bankRepo).save(accountArgumentCaptor.capture());
+        verify(accountCreatedPublisher).publish("Account created successfully. Account Number : " + result.getAccountNumber());
         BankAccount savedAccount = accountArgumentCaptor.getValue();
 
         assertEquals("Ana Hesap", savedAccount.getName());

@@ -9,6 +9,7 @@ import com.example.bankservice.exception.AccountNotFoundException;
 import com.example.bankservice.exception.InsufficientBalanceException;
 import com.example.bankservice.exception.InvalidAmountException;
 import com.example.bankservice.mapper.BankAccountMapper;
+import com.example.bankservice.messaging.AccountCreatedPublisher;
 import com.example.bankservice.repository.AppUserRepository;
 import com.example.bankservice.repository.BankRepo;
 import org.springframework.cache.annotation.CacheEvict;
@@ -32,12 +33,14 @@ public class BankService {
 
     private final BankRepo reposition;
     private final AppUserRepository appUserRepository;
+    private final AccountCreatedPublisher accountCreatedPublisher;
 
 
 
-    public BankService(BankRepo reposition,AppUserRepository appUserRepository) {
+    public BankService(BankRepo reposition,AppUserRepository appUserRepository,AccountCreatedPublisher accountCreatedPublisher) {
         this.reposition = reposition;
         this.appUserRepository = appUserRepository;
+        this.accountCreatedPublisher = accountCreatedPublisher;
     }            //burada da constructor injeciton var.
 
     private String formatAccountNumber(String accountNumber){
@@ -119,7 +122,7 @@ public class BankService {
         bankAccount.setAccountNumber(formattedAccountNumber);
         bankAccount.setAppUser(appUser);
         reposition.save(bankAccount);
-        log.info("Account created successfully. Account Number: {}, Balance: {}", formattedAccountNumber, bankAccount.getBalance());
+        accountCreatedPublisher.publish("Account created successfully. Account Number : " + formattedAccountNumber);
 
         return  BankAccountMapper.toDto(bankAccount);
     }
