@@ -15,6 +15,7 @@ import com.example.bankservice.repository.AppUserRepository;
 import com.example.bankservice.repository.BankRepo;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -35,14 +36,13 @@ public class BankService {
 
     private final BankRepo reposition;
     private final AppUserRepository appUserRepository;
-    private final AccountCreatedPublisher accountCreatedPublisher;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
 
-
-    public BankService(BankRepo reposition,AppUserRepository appUserRepository,AccountCreatedPublisher accountCreatedPublisher) {
+    public BankService(BankRepo reposition, AppUserRepository appUserRepository, AccountCreatedPublisher accountCreatedPublisher, ApplicationEventPublisher applicationEventPublisher) {
         this.reposition = reposition;
         this.appUserRepository = appUserRepository;
-        this.accountCreatedPublisher = accountCreatedPublisher;
+        this.applicationEventPublisher = applicationEventPublisher;
     }            //burada da constructor injeciton var.
 
     private String formatAccountNumber(String accountNumber){
@@ -58,6 +58,35 @@ public class BankService {
 
         }
         return "TR" + normalized;
+    }
+    @Transactional
+    public BankAccountResponseDto createAccount(CreateAccountRequestDto requestDto, String authenticatedUserName){
+        AppUser appUser = appUserRepository.findByUsername(authenticatedUserName).orElseThrow(() -> new AccountNotFoundException("User not find"));
+        String formattedAccountNumber =
+                formatAccountNumber(requestDto.getAccountNumber());
+
+        BankAccount bankAccount = new BankAccount();
+        bankAccount.setBalance(0.0);
+        bankAccount.setName(requestDto.getName());
+
+        if(reposition.findByAccountNumber(formattedAccountNumber).isPresent()){
+            log.warn("Account Number exists !");
+            throw new AccountAlreadyExistsException("This account number exists");
+        }
+        bankAccount.setAccountNumber(formattedAccountNumber);
+        bankAccount.setAppUser(appUser);
+        reposition.save(bankAccount);
+
+        AccountCreatedEvent event = new AccountCreatedEvent(
+                formattedAccountNumber,
+                authenticatedUserName,
+                bankAccount.getName(),
+                Instant.now()
+
+        );
+        applicationEventPublisher.publishEvent(event);
+
+        return  BankAccountMapper.toDto(bankAccount);
     }
     @Transactional
     public BankAccountResponseDto withdraw(String accountNumber, double amount) {
@@ -107,35 +136,7 @@ public class BankService {
         log.info("Deposit operation is successful. Account Number : {}, Current Balance: {} ", accountNumber, account.getBalance());
         return  BankAccountMapper.toDto(account);
     }
-    @Transactional
-    public BankAccountResponseDto createAccount(CreateAccountRequestDto requestDto, String authenticatedUserName){
-        AppUser appUser = appUserRepository.findByUsername(authenticatedUserName).orElseThrow(() -> new AccountNotFoundException("User not find"));
-        String formattedAccountNumber =
-                formatAccountNumber(requestDto.getAccountNumber());
 
-        BankAccount bankAccount = new BankAccount();
-        bankAccount.setBalance(0.0);
-        bankAccount.setName(requestDto.getName());
-
-        if(reposition.findByAccountNumber(formattedAccountNumber).isPresent()){
-            log.warn("Account Number exists !");
-            throw new AccountAlreadyExistsException("This account number exists");
-        }
-        bankAccount.setAccountNumber(formattedAccountNumber);
-        bankAccount.setAppUser(appUser);
-        reposition.save(bankAccount);
-
-        AccountCreatedEvent event = new AccountCreatedEvent(
-                formattedAccountNumber,
-                authenticatedUserName,
-                bankAccount.getName(),
-                Instant.now()
-
-        );
-        accountCreatedPublisher.publish(event);
-
-        return  BankAccountMapper.toDto(bankAccount);
-    }
     @Transactional(readOnly = true)
     public BankAccountResponseDto getAccount(String accountNumber){
         String formattedAccountNumber =
