@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,13 +37,13 @@ public class BankService {
 
     private final BankRepo reposition;
     private final AppUserRepository appUserRepository;
-    private final ApplicationEventPublisher applicationEventPublisher;
+    private final OutboxService outboxService;
 
 
-    public BankService(BankRepo reposition, AppUserRepository appUserRepository, AccountCreatedPublisher accountCreatedPublisher, ApplicationEventPublisher applicationEventPublisher) {
+    public BankService(BankRepo reposition, AppUserRepository appUserRepository,OutboxService  outboxService) {
         this.reposition = reposition;
         this.appUserRepository = appUserRepository;
-        this.applicationEventPublisher = applicationEventPublisher;
+        this.outboxService = outboxService;
     }            //burada da constructor injeciton var.
 
     private String formatAccountNumber(String accountNumber){
@@ -78,13 +79,14 @@ public class BankService {
         reposition.save(bankAccount);
 
         AccountCreatedEvent event = new AccountCreatedEvent(
+                UUID.randomUUID(),
                 formattedAccountNumber,
                 authenticatedUserName,
                 bankAccount.getName(),
                 Instant.now()
 
         );
-        applicationEventPublisher.publishEvent(event);
+       outboxService.saveAccountCreatedEvent(event);
 
         return  BankAccountMapper.toDto(bankAccount);
     }

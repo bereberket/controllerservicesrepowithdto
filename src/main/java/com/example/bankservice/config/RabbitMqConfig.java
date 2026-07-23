@@ -53,6 +53,20 @@ public class RabbitMqConfig {
     }
 
     @Bean
+    public Binding accountCreatedBinding(
+            @Qualifier("accountCreatedQueue")
+            Queue accountCreatedQueue,
+
+            @Qualifier("bankEventsExchange")
+            DirectExchange bankEventsExchange
+    ){
+        return BindingBuilder
+                .bind(accountCreatedQueue)
+                .to(bankEventsExchange)
+                .with(ACCOUNT_CREATED_ROUTING_KEY);
+    }
+
+    @Bean
     public Binding accountCreatedDeadLetterBinding(
             @Qualifier("accountCreatedDeadLetterQueue")
             Queue deadLetterQueue,
@@ -70,19 +84,7 @@ public class RabbitMqConfig {
 
 
 
-    @Bean
-    public Binding accountCreatedBinding(
-            @Qualifier("accountCreatedQueue")
-            Queue accountCreatedQueue,
 
-            @Qualifier("bankEventsExchange")
-            DirectExchange bankEventsExchange
-    ){
-        return BindingBuilder
-                .bind(accountCreatedQueue)
-                .to(bankEventsExchange)
-                .with(ACCOUNT_CREATED_ROUTING_KEY);
-    }
 
     @Bean
     public MessageConverter jsonMessageConverter(){

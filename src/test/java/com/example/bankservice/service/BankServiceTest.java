@@ -36,7 +36,7 @@ public class BankServiceTest {
     @Mock
     private BankRepo bankRepo;
     @Mock
-    private ApplicationEventPublisher applicationEventPublisher;
+    private OutboxService outboxService;
 
     @InjectMocks
     private BankService bankService;
@@ -105,14 +105,14 @@ public class BankServiceTest {
         //giden mesajı doğrulamak için
         ArgumentCaptor<AccountCreatedEvent> eventCaptor =
                 ArgumentCaptor.forClass(AccountCreatedEvent.class);
-        verify(applicationEventPublisher)
-                .publishEvent(eventCaptor.capture());
+        verify(outboxService)
+                .saveAccountCreatedEvent(eventCaptor.capture());
 
         AccountCreatedEvent publishedEvent = eventCaptor.getValue();
         assertEquals("Ana Hesap", publishedEvent.accountName());
         assertEquals("TR123", publishedEvent.accountNumber());
         assertEquals(authenticatedUserName, publishedEvent.username());
-        assertNotNull(publishedEvent.createdAt());
+        assertNotNull(publishedEvent.eventId());
 
 
     }
