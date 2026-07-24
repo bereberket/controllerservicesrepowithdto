@@ -1,11 +1,9 @@
 package com.example.bankservice.entity;
 
+import com.example.bankservice.entity.OutboxEvent;
 import com.example.bankservice.enums.OutboxStatus;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class OutboxEventTests {
 
