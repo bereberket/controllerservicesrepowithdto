@@ -73,6 +73,10 @@ public class SecurityConfig {
                                 "/api/accounts/**"
 
                         ).hasAnyRole("CUSTOMER", "ADMIN")
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/admin/outbox/**"
+                        ).hasRole("ADMIN")
 
                         .anyRequest().authenticated()
                 )

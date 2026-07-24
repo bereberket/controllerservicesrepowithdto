@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import com.example.bankservice.enums.ActiveSituation;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 public class BankServiceTest {
@@ -34,9 +35,8 @@ public class BankServiceTest {
 
     @Mock
     private BankRepo bankRepo;
-
     @Mock
-    private AccountCreatedPublisher accountCreatedPublisher;
+    private OutboxService outboxService;
 
     @InjectMocks
     private BankService bankService;
@@ -105,13 +105,14 @@ public class BankServiceTest {
         //giden mesajı doğrulamak için
         ArgumentCaptor<AccountCreatedEvent> eventCaptor =
                 ArgumentCaptor.forClass(AccountCreatedEvent.class);
-        verify(accountCreatedPublisher).publish(eventCaptor.capture());
+        verify(outboxService)
+                .saveAccountCreatedEvent(eventCaptor.capture());
 
         AccountCreatedEvent publishedEvent = eventCaptor.getValue();
         assertEquals("Ana Hesap", publishedEvent.accountName());
         assertEquals("TR123", publishedEvent.accountNumber());
         assertEquals(authenticatedUserName, publishedEvent.username());
-        assertNotNull(publishedEvent.createdAt());
+        assertNotNull(publishedEvent.eventId());
 
 
     }
