@@ -86,4 +86,16 @@ public class OutboxEvent {
             this.status = OutboxStatus.FAILED;
         }
     }
+
+    public void prepareForRetry(){
+        if(this.status != OutboxStatus.FAILED){   //metodun çalıştığı statü alanı    --->>> if(outboxEvent.getStatus() != OutboxStatus.FAILED)
+            throw new IllegalStateException(
+                    "Only failed outbox events can be retried."
+            );
+        }
+        this.status = OutboxStatus.PENDING;
+        this.retryCount = 0;
+        this.lastError = null;
+        this.publishedAt = null;
+    }
 }

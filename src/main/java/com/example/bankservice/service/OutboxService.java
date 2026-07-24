@@ -4,6 +4,7 @@ import com.example.bankservice.entity.OutboxEvent;
 import com.example.bankservice.messaging.AccountCreatedEvent;
 import com.example.bankservice.repository.OutboxRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
@@ -45,5 +46,19 @@ public class OutboxService {
             );
         }
     }
+
+    @Transactional
+    public void requeueFailedEvent(String eventId){
+        OutboxEvent outboxEvent = outboxRepository
+                .findById(eventId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Outbox event not found" + eventId
+                        )
+                );
+        outboxEvent.prepareForRetry();
+        //outboxRepository.save(outboxEvent); --->>> dirty checking
+    }
+
 
 }
