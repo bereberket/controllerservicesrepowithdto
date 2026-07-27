@@ -15,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestBody;
+
+import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.context.request.AsyncWebRequestInterceptor;
@@ -35,13 +37,13 @@ public class BankController {
 
     @PostMapping("{accountNumber}/withdraw")
 
-    public ResponseEntity<BankAccountResponseDto> withdraw(@PathVariable String accountNumber, @RequestParam double amount) {
+    public ResponseEntity<BankAccountResponseDto> withdraw(@PathVariable String accountNumber, @RequestParam BigDecimal amount) {
         BankAccountResponseDto account = bankService.withdraw(accountNumber, amount);
         return ResponseEntity.ok(account);
     }
 
     @PostMapping("{accountNumber}/deposit")
-    public ResponseEntity<BankAccountResponseDto> deposit(@PathVariable String accountNumber, @RequestParam double depositAmount) throws InvalidAmountException {
+    public ResponseEntity<BankAccountResponseDto> deposit(@PathVariable String accountNumber, @RequestParam BigDecimal depositAmount) throws InvalidAmountException {
         BankAccountResponseDto account = bankService.deposit(accountNumber, depositAmount);
         return ResponseEntity.ok(account);
     }
@@ -117,7 +119,7 @@ public class BankController {
 
     @GetMapping("/search")
 
-    public ResponseEntity<List<BankAccountResponseDto>> getAccountsWithBalanceGreaterThan(@RequestParam double minBalance) {
+    public ResponseEntity<List<BankAccountResponseDto>> getAccountsWithBalanceGreaterThan(@RequestParam BigDecimal minBalance) {
         List<BankAccountResponseDto> accounts = bankService.getAccountsWithBalanceGreaterThan(minBalance);
         return ResponseEntity.ok(accounts);
 

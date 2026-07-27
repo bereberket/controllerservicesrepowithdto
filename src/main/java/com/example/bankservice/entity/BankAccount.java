@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 
 
@@ -26,8 +27,8 @@ public class BankAccount {
     @Column(name = "NAMELY", nullable = false)
     private String name;
 
-    @Column(nullable = false)
-    private double balance;
+    @Column(nullable = false, precision = 19, scale = 2)
+    private BigDecimal balance;
 
     @Column(nullable = false,unique = true)
     private String accountNumber;
