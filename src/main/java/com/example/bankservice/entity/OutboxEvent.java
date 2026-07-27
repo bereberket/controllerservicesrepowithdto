@@ -16,7 +16,7 @@ import java.time.Instant;
 @Getter
 @Entity
 @Table(name = "outbox_event")
-public class OutboxEvent {
+public class                          OutboxEvent {
 
     @Id
     @Column(name = "event_id", length = 36, nullable = false, updatable = false)
@@ -87,14 +87,16 @@ public class OutboxEvent {
         }
     }
 
+
+    //for put in queue messsages which failed after many retries
     public void prepareForRetry(){
-        if(this.status != OutboxStatus.FAILED){   //metodun çalıştığı statü alanı    --->>> if(outboxEvent.getStatus() != OutboxStatus.FAILED)
+        if(this.status != OutboxStatus.FAILED){
             throw new IllegalStateException(
                     "Only failed outbox events can be retried."
             );
         }
         this.status = OutboxStatus.PENDING;
-        this.retryCount = 0;
+        this    .retryCount = 0;
         this.lastError = null;
         this.publishedAt = null;
     }
