@@ -6,6 +6,7 @@ import com.example.bankservice.entity.AppUser;
 import com.example.bankservice.entity.BankAccount;
 import com.example.bankservice.exception.AccountAlreadyExistsException;
 import com.example.bankservice.exception.AccountNotFoundException;
+import com.example.bankservice.exception.InvalidAmountException;
 import com.example.bankservice.messaging.AccountCreatedEvent;
 import com.example.bankservice.messaging.AccountCreatedPublisher;
 import com.example.bankservice.repository.AppUserRepository;
@@ -20,6 +21,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.junit.jupiter.api.Test;
+import java.math.BigDecimal;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -86,7 +88,7 @@ public class BankServiceTest {
                 bankService.createAccount(requestDto, "Berk");   // doğrulamam gerek.
         assertEquals("Ana Hesap", result.getName());
         assertEquals("TR123", result.getAccountNumber());
-        assertEquals(0.0, result.getBalance());
+        assertEquals(new BigDecimal("0.00"), result.getBalance());
 
         ArgumentCaptor<BankAccount> accountArgumentCaptor =
                 ArgumentCaptor.forClass(BankAccount.class);
@@ -96,7 +98,7 @@ public class BankServiceTest {
 
         assertEquals("Ana Hesap", savedAccount.getName());
         assertEquals("TR123", savedAccount.getAccountNumber());
-        assertEquals(0.0, savedAccount.getBalance());
+        assertEquals(new BigDecimal("0.00"), savedAccount.getBalance());
         assertSame(appUser,savedAccount.getAppUser());  // bellekte aynı nesne mi
 
         // verify(bankRepo).save(any(BankAccount.class)); --- >> Parametre kontrolü yapmaz. Yanlış paramatere de kabıl eder
@@ -115,6 +117,58 @@ public class BankServiceTest {
         assertNotNull(publishedEvent.eventId());
 
 
+    }
+
+    @Test
+    @DisplayName("Deposit should add decimal amount without precision loss")
+    void deposit_shouldAddAmountWithoutPrecisionLoss(){
+        BankAccount account = new BankAccount();
+        account.setAccountNumber("TR123");
+        account.setBalance(new BigDecimal("0.10"));
+
+        when(bankRepo.findByAccountNumber("TR123"))
+                .thenReturn(Optional.of(account));
+
+        BankAccountResponseDto result =
+                bankService.deposit("123", new BigDecimal("0.20"));
+
+        assertEquals(new BigDecimal("0.30"), result.getBalance());
+        assertEquals(new BigDecimal("0.30"), account.getBalance());
+    }
+
+    @Test
+    @DisplayName("Withdraw should subtract decimal amount without precision loss")
+    void withdraw_shouldSubtractAmountWithoutPrecisionLoss(){
+        BankAccount account = new BankAccount();
+        account.setAccountNumber("TR123");
+        account.setBalance(new BigDecimal("100.30"));
+
+        when(bankRepo.findByAccountNumber("TR123"))
+                .thenReturn(Optional.of(account));
+
+        BankAccountResponseDto result =
+                bankService.withdraw("123", new BigDecimal("0.20"));
+
+        assertEquals(new BigDecimal("100.10"), result.getBalance());
+        assertEquals(new BigDecimal("100.10"), account.getBalance());
+    }
+
+    @Test
+    @DisplayName("Money amount should reject more than two decimal places")
+    void deposit_shouldRejectAmountWithMoreThanTwoDecimalPlaces(){
+        InvalidAmountException exception = assertThrows(
+                InvalidAmountException.class,
+                () -> bankService.deposit(
+                        "123",
+                        new BigDecimal("1.001")
+                )
+        );
+
+        assertEquals(
+                "Amount can have at most two decimal places",
+                exception.getMessage()
+        );
+        verify(bankRepo, never()).findByAccountNumber(anyString());
     }
     @Test
     @DisplayName("If user not exist, should throw AccountNotFoundException")

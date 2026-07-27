@@ -24,6 +24,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +36,7 @@ import java.util.stream.Collectors;
 public class BankService {
 
     private static final Logger log = LoggerFactory.getLogger(BankService.class);
+    private static final BigDecimal ZERO_BALANCE = new BigDecimal("0.00");
 
     private final BankRepo reposition;
     private final AppUserRepository appUserRepository;
@@ -60,6 +63,21 @@ public class BankService {
         }
         return "TR" + normalized;
     }
+
+    private BigDecimal validateMoneyAmount(BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidAmountException("Amount must be greater than zero");
+        }
+
+        try {
+            return amount.setScale(2, RoundingMode.UNNECESSARY);
+        } catch (ArithmeticException exception) {
+            throw new InvalidAmountException(
+                    "Amount can have at most two decimal places"
+            );
+        }
+    }
+
     @Transactional
     public BankAccountResponseDto createAccount(CreateAccountRequestDto requestDto, String authenticatedUserName){
         AppUser appUser = appUserRepository.findByUsername(authenticatedUserName).orElseThrow(() -> new AccountNotFoundException("User not find"));
@@ -67,7 +85,7 @@ public class BankService {
                 formatAccountNumber(requestDto.getAccountNumber());
 
         BankAccount bankAccount = new BankAccount();
-        bankAccount.setBalance(0.0);
+        bankAccount.setBalance(ZERO_BALANCE);
         bankAccount.setName(requestDto.getName());
 
         if(reposition.findByAccountNumber(formattedAccountNumber).isPresent()){
@@ -91,14 +109,11 @@ public class BankService {
         return  BankAccountMapper.toDto(bankAccount);
     }
     @Transactional
-    public BankAccountResponseDto withdraw(String accountNumber, double amount) {
+    public BankAccountResponseDto withdraw(String accountNumber, BigDecimal amount) {
         String formattedAccountNumber =
                 formatAccountNumber(accountNumber);
+        BigDecimal validatedAmount = validateMoneyAmount(amount);
         log.info("Withdraw operation started. Account Number: {}, Amount of Withdraw: {}", formattedAccountNumber, amount);
-        if(amount<=0){
-            log.warn("Invalid amount. Please enter valid numbers !");
-            throw new InvalidAmountException("Enter valid number");
-        }
 
         BankAccount account = reposition.findByAccountNumber(formattedAccountNumber)
                 .orElseThrow(() -> {
@@ -107,33 +122,32 @@ public class BankService {
 
                 });
 
-        if(account.getBalance()< amount){
+        if(account.getBalance().compareTo(validatedAmount) < 0){
             log.warn("Unsufficient balance!");
             String infoMessage = String.format("Your balance is insufficient for this. You should deposit %.2f TL for this operation. Account Number: %s, Current Balance: %.2f TL",
-            amount-account.getBalance(),formattedAccountNumber,account.getBalance()
+                    validatedAmount.subtract(account.getBalance()),
+                    formattedAccountNumber,
+                    account.getBalance()
             );
             throw new InsufficientBalanceException(infoMessage);
         }
-        double newBalance = account.getBalance() - amount;
+        BigDecimal newBalance = account.getBalance().subtract(validatedAmount);
         account.setBalance(newBalance);
         log.info("Your operation is successful. Account Number: {}, Current Balance: {}", formattedAccountNumber, account.getBalance());
         return  BankAccountMapper.toDto(account);
     }
     @Transactional
-    public BankAccountResponseDto deposit(String accountNumber, double depositAmount){
+    public BankAccountResponseDto deposit(String accountNumber, BigDecimal depositAmount){
         String formattedAccountNumber =
                 formatAccountNumber(accountNumber);
+        BigDecimal validatedAmount = validateMoneyAmount(depositAmount);
         log.info("Deposit operation started. Account Number: {}, Amount of Deposit: {}",formattedAccountNumber,depositAmount);
 
-        if(depositAmount<=0){
-            log.warn("Zero or smaller number! ");
-            throw new InvalidAmountException("Amount must be greater than zero");
-        }
         BankAccount account = reposition.findByAccountNumber(formattedAccountNumber).orElseThrow(() -> {
                  log.warn("No User");
                  throw new AccountNotFoundException("There isn't any account like that");
                          });
-        double newBalanceDepo = account.getBalance() + depositAmount;
+        BigDecimal newBalanceDepo = account.getBalance().add(validatedAmount);
         account.setBalance(newBalanceDepo);
         log.info("Deposit operation is successful. Account Number : {}, Current Balance: {} ", accountNumber, account.getBalance());
         return  BankAccountMapper.toDto(account);
@@ -177,7 +191,7 @@ public class BankService {
 
     @Transactional(readOnly = true)
 
-    public List<BankAccountResponseDto> getAccountsWithBalanceGreaterThan(double minBalance) {
+    public List<BankAccountResponseDto> getAccountsWithBalanceGreaterThan(BigDecimal minBalance) {
         return reposition.findByBalanceGreaterThan(minBalance)
                 .stream().map(BankAccountMapper::toDto).toList();
         

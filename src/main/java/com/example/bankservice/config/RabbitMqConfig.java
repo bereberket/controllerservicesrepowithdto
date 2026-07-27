@@ -43,14 +43,15 @@ public class RabbitMqConfig {
     }
 
     @Bean
+    public DirectExchange bankEventsExchange(){
+        return new DirectExchange(BANK_EVENTS_EXCHANGE);
+    }
+
+    @Bean
     public DirectExchange bankEventsDeadLetterExchange(){
         return new DirectExchange(ACCOUNT_CREATED_DLX);
     }
 
-    @Bean
-    public DirectExchange bankEventsExchange(){
-        return new DirectExchange(BANK_EVENTS_EXCHANGE);
-    }
 
     @Bean
     public Binding accountCreatedBinding(

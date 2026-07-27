@@ -13,6 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+
 import static org.junit.jupiter.api.Assertions.*;
 import com.example.bankservice.enums.ActiveSituation;
 
@@ -63,7 +66,7 @@ public class BankServiceAppTest {
         //ASSERT
         assertEquals("integrasyon hesabı", result.getName());
         assertEquals("TR900", result.getAccountNumber());
-        assertEquals(0.0, result.getBalance());
+        assertEquals(new BigDecimal("0.00"), result.getBalance());
 
         BankAccount savedAccount =
                 bankRepo.findByAccountNumber("TR900")
@@ -72,7 +75,7 @@ public class BankServiceAppTest {
 
         assertEquals("integrasyon hesabı",savedAccount.getName());
         assertEquals("TR900", savedAccount.getAccountNumber());
-        assertEquals(0.0, savedAccount.getBalance());
+        assertEquals(new BigDecimal("0.00"), savedAccount.getBalance());
         assertEquals("integrasyon user",savedAccount.getAppUser().getUsername());
         assertEquals(appUser.getId(), savedAccount.getAppUser().getId());
 
