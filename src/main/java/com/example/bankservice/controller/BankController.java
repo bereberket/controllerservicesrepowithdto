@@ -37,19 +37,20 @@ public class BankController {
 
     @PostMapping("{accountNumber}/withdraw")
 
-    public ResponseEntity<BankAccountResponseDto> withdraw(@PathVariable String accountNumber, @RequestParam BigDecimal amount) {
-        BankAccountResponseDto account = bankService.withdraw(accountNumber, amount);
+    public ResponseEntity<BankAccountResponseDto> withdraw(@PathVariable String accountNumber, @RequestParam BigDecimal amount,Authentication authentication) {
+        String authenticatedUserName = authentication.getName();
+        BankAccountResponseDto account = bankService.withdraw(accountNumber,amount,authenticatedUserName);
         return ResponseEntity.ok(account);
     }
 
     @PostMapping("{accountNumber}/deposit")
-    public ResponseEntity<BankAccountResponseDto> deposit(@PathVariable String accountNumber, @RequestParam BigDecimal depositAmount) throws InvalidAmountException {
-        BankAccountResponseDto account = bankService.deposit(accountNumber, depositAmount);
+    public ResponseEntity<BankAccountResponseDto> deposit(@PathVariable String accountNumber, @RequestParam BigDecimal depositAmount,Authentication authentication){
+        String authenticatedUserName = authentication.getName();
+        BankAccountResponseDto account = bankService.deposit(accountNumber, depositAmount, authenticatedUserName);
         return ResponseEntity.ok(account);
     }
 
     @PostMapping("createAccount")
-
     public ResponseEntity<List<BankAccountResponseDto>> createAccount(
             @RequestBody List< @Valid CreateAccountRequestDto> requestDto,
             Authentication authentication) {
@@ -67,14 +68,16 @@ public class BankController {
     }
 
     @GetMapping("{accountNumber}/getAccount")
-    public ResponseEntity<BankAccountResponseDto> getAccount(@PathVariable String accountNumber) {
-        BankAccountResponseDto account = bankService.getAccount(accountNumber);
+    public ResponseEntity<BankAccountResponseDto> getAccount(@PathVariable String accountNumber,Authentication authentication) {
+        String authenticatedUserName = authentication.getName();
+        BankAccountResponseDto account = bankService.getAccount(accountNumber,authenticatedUserName);
         return ResponseEntity.ok(account);
     }
 
     @DeleteMapping("{accountNumber}")
-    public ResponseEntity<Void> deleteAccount(@PathVariable String accountNumber) {
-        bankService.deleteAccount(accountNumber);
+    public ResponseEntity<Void> deleteAccount(@PathVariable String accountNumber,Authentication authentication) {
+        String authenticatedUserName = authentication.getName();
+        bankService.deleteAccount(accountNumber,authenticatedUserName);
         return ResponseEntity.noContent().build();
     }
 
@@ -118,9 +121,9 @@ public class BankController {
     }
 
     @GetMapping("/search")
-
-    public ResponseEntity<List<BankAccountResponseDto>> getAccountsWithBalanceGreaterThan(@RequestParam BigDecimal minBalance) {
-        List<BankAccountResponseDto> accounts = bankService.getAccountsWithBalanceGreaterThan(minBalance);
+    public ResponseEntity<List<BankAccountResponseDto>> getAccountsWithBalanceGreaterThan(@RequestParam BigDecimal minBalance, Authentication authentication) {
+        String authenticatedUserName = authentication.getName();
+        List<BankAccountResponseDto> accounts = bankService.getAccountsWithBalanceGreaterThan(minBalance,authenticatedUserName);
         return ResponseEntity.ok(accounts);
 
     }

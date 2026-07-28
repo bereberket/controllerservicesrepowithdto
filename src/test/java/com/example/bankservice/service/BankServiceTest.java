@@ -7,6 +7,7 @@ import com.example.bankservice.entity.BankAccount;
 import com.example.bankservice.exception.AccountAlreadyExistsException;
 import com.example.bankservice.exception.AccountNotFoundException;
 import com.example.bankservice.exception.InvalidAmountException;
+import com.example.bankservice.enums.Role;
 import com.example.bankservice.messaging.AccountCreatedEvent;
 import com.example.bankservice.messaging.AccountCreatedPublisher;
 import com.example.bankservice.repository.AppUserRepository;
@@ -14,8 +15,6 @@ import com.example.bankservice.repository.BankRepo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -60,14 +59,6 @@ public class BankServiceTest {
         appUser.setId(39L);
 
     }
-    @ParameterizedTest
-    @ValueSource(strings = {""," ", "  "})
-    @DisplayName("Invalid usernames should reject")
-    void createAccount_shouldRejectBlankUsername(String authenticatedUserName){
-        requestDto.setUsername(authenticatedUserName);
-        requestDto.setAccountNumber("99");
-    }
-
     @Test
     @DisplayName("If user exists and acc. number unique then account should create.!!")
     void createAccount_shouldCreateAccount_whenUserExistsAndAccountNumberIsUnique(){
@@ -126,14 +117,22 @@ public class BankServiceTest {
         account.setAccountNumber("TR123");
         account.setBalance(new BigDecimal("0.10"));
 
-        when(bankRepo.findByAccountNumber("TR123"))
+        when(bankRepo.findByAccountNumberAndAppUserUsername(
+                "TR123",
+                authenticatedUserName
+        ))
                 .thenReturn(Optional.of(account));
 
         BankAccountResponseDto result =
-                bankService.deposit("123", new BigDecimal("0.20"));
+                bankService.deposit("123", new BigDecimal("0.20"),authenticatedUserName);
 
         assertEquals(new BigDecimal("0.30"), result.getBalance());
         assertEquals(new BigDecimal("0.30"), account.getBalance());
+
+        verify(bankRepo).findByAccountNumberAndAppUserUsername(
+                "TR123",
+                authenticatedUserName
+        );
     }
 
     @Test
@@ -143,14 +142,22 @@ public class BankServiceTest {
         account.setAccountNumber("TR123");
         account.setBalance(new BigDecimal("100.30"));
 
-        when(bankRepo.findByAccountNumber("TR123"))
+        when(bankRepo.findByAccountNumberAndAppUserUsername(
+                "TR123",
+                authenticatedUserName
+        ))
                 .thenReturn(Optional.of(account));
 
         BankAccountResponseDto result =
-                bankService.withdraw("123", new BigDecimal("0.20"));
+                bankService.withdraw("123", new BigDecimal("0.20"),authenticatedUserName);
 
         assertEquals(new BigDecimal("100.10"), result.getBalance());
         assertEquals(new BigDecimal("100.10"), account.getBalance());
+
+        verify(bankRepo).findByAccountNumberAndAppUserUsername(
+                "TR123",
+                authenticatedUserName
+        );
     }
 
     @Test
@@ -160,7 +167,8 @@ public class BankServiceTest {
                 InvalidAmountException.class,
                 () -> bankService.deposit(
                         "123",
-                        new BigDecimal("1.001")
+                        new BigDecimal("1.001"),
+                        authenticatedUserName
                 )
         );
 
@@ -236,6 +244,78 @@ public class BankServiceTest {
 
 
 
+    }
+
+    @Test
+    void deleteAccount_shouldDeleteOwnAccount_whenUserIsCustomer() {
+        appUser.setRole(Role.CUSTOMER);
+
+        BankAccount account = new BankAccount();
+        account.setAccountNumber("TR123");
+        account.setAppUser(appUser);
+
+        when(appUserRepository.findByUsername(authenticatedUserName))
+                .thenReturn(Optional.of(appUser));
+        when(bankRepo.findByAccountNumberAndAppUserUsername(
+                "TR123",
+                authenticatedUserName
+        )).thenReturn(Optional.of(account));
+
+        bankService.deleteAccount("123", authenticatedUserName);
+
+        verify(bankRepo).findByAccountNumberAndAppUserUsername(
+                "TR123",
+                authenticatedUserName
+        );
+        verify(bankRepo, never()).findByAccountNumber("TR123");
+        verify(bankRepo).delete(account);
+    }
+
+    @Test
+    void deleteAccount_shouldDeleteAnyAccount_whenUserIsAdmin() {
+        AppUser admin = new AppUser();
+        admin.setUsername("Admin");
+        admin.setRole(Role.ADMIN);
+
+        BankAccount account = new BankAccount();
+        account.setAccountNumber("TR123");
+
+        when(appUserRepository.findByUsername("Admin"))
+                .thenReturn(Optional.of(admin));
+        when(bankRepo.findByAccountNumber("TR123"))
+                .thenReturn(Optional.of(account));
+
+        bankService.deleteAccount("123", "Admin");
+
+        verify(bankRepo).findByAccountNumber("TR123");
+        verify(bankRepo, never())
+                .findByAccountNumberAndAppUserUsername(
+                        anyString(),
+                        anyString()
+                );
+        verify(bankRepo).delete(account);
+    }
+
+    @Test
+    void deleteAccount_shouldRejectAccountOwnedByAnotherUser_whenUserIsCustomer() {
+        appUser.setRole(Role.CUSTOMER);
+
+        when(appUserRepository.findByUsername(authenticatedUserName))
+                .thenReturn(Optional.of(appUser));
+        when(bankRepo.findByAccountNumberAndAppUserUsername(
+                "TR123",
+                authenticatedUserName
+        )).thenReturn(Optional.empty());
+
+        assertThrows(
+                AccountNotFoundException.class,
+                () -> bankService.deleteAccount(
+                        "123",
+                        authenticatedUserName
+                )
+        );
+
+        verify(bankRepo, never()).delete(any(BankAccount.class));
     }
 
 }

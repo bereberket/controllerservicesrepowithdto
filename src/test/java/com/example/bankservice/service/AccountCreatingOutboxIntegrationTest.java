@@ -77,7 +77,10 @@ public class AccountCreatingOutboxIntegrationTest {
         assertEquals(new BigDecimal("0.00"), result.getBalance());
 
         BankAccount savedAccount =
-                bankRepo.findByAccountNumber("TR900")
+                bankRepo.findByAccountNumberAndAppUserUsername(
+                        "TR900",
+                        "integrasyon user"
+                )
                         .orElseThrow();
 
 

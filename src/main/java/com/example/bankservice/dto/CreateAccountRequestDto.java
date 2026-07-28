@@ -14,7 +14,6 @@ public class CreateAccountRequestDto {
     @NotBlank(message = "Account Number shouldn't be null")
     private String accountNumber;
 
-    @NotBlank(message = "Username shouldn't be null")
-    private String username;
+
 
 }

@@ -62,8 +62,12 @@ public class SecurityConfig {
 
                         .requestMatchers(
                                 HttpMethod.DELETE,
-                                "/api/accounts/**"
+                                "/api/accounts/deleteuser/**"
                         ).hasRole("ADMIN")
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/accounts/*"
+                        ).hasAnyRole("CUSTOMER", "ADMIN")
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/accounts/all"
