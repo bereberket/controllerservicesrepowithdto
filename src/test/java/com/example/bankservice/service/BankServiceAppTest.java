@@ -94,12 +94,10 @@ public class BankServiceAppTest {
         CreateAccountRequestDto firstRequestDto = new CreateAccountRequestDto();
         firstRequestDto.setAccountNumber("2573");
         firstRequestDto.setName("Birinci Hesap");
-        firstRequestDto.setUsername("berko");
 
         bankService.createAccount(firstRequestDto,"berko");
 
         CreateAccountRequestDto secondReq = new CreateAccountRequestDto();
-        secondReq.setUsername("berko");
         secondReq.setAccountNumber("2573");
         secondReq.setName("İkinci Hesap");
 

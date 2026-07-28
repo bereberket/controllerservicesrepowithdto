@@ -8,6 +8,7 @@ import com.example.bankservice.exception.AccountAlreadyExistsException;
 import com.example.bankservice.exception.AccountNotFoundException;
 import com.example.bankservice.exception.InsufficientBalanceException;
 import com.example.bankservice.exception.InvalidAmountException;
+import com.example.bankservice.enums.Role;
 import com.example.bankservice.mapper.BankAccountMapper;
 import com.example.bankservice.messaging.AccountCreatedEvent;
 import com.example.bankservice.messaging.AccountCreatedPublisher;
@@ -109,18 +110,18 @@ public class BankService {
         return  BankAccountMapper.toDto(bankAccount);
     }
     @Transactional
-    public BankAccountResponseDto withdraw(String accountNumber, BigDecimal amount) {
+    public BankAccountResponseDto withdraw(String accountNumber, BigDecimal amount,String authenticatedUserName) {
         String formattedAccountNumber =
                 formatAccountNumber(accountNumber);
         BigDecimal validatedAmount = validateMoneyAmount(amount);
         log.info("Withdraw operation started. Account Number: {}, Amount of Withdraw: {}", formattedAccountNumber, amount);
 
-        BankAccount account = reposition.findByAccountNumber(formattedAccountNumber)
-                .orElseThrow(() -> {
-                    log.warn("Error. Account doesn't exist. Account No: {}", formattedAccountNumber);
-                     return new AccountNotFoundException("There isn't any account");
-
+        BankAccount account = reposition.findByAccountNumberAndAppUserUsername(formattedAccountNumber,authenticatedUserName)
+                .orElseThrow(()->{
+                    log.warn("Account doesn't exist");
+                    return new AccountNotFoundException("Account doesn't exist");
                 });
+
 
         if(account.getBalance().compareTo(validatedAmount) < 0){
             log.warn("Unsufficient balance!");
@@ -137,16 +138,17 @@ public class BankService {
         return  BankAccountMapper.toDto(account);
     }
     @Transactional
-    public BankAccountResponseDto deposit(String accountNumber, BigDecimal depositAmount){
+    public BankAccountResponseDto deposit(String accountNumber, BigDecimal depositAmount, String authenticatedUserName){
         String formattedAccountNumber =
                 formatAccountNumber(accountNumber);
         BigDecimal validatedAmount = validateMoneyAmount(depositAmount);
         log.info("Deposit operation started. Account Number: {}, Amount of Deposit: {}",formattedAccountNumber,depositAmount);
 
-        BankAccount account = reposition.findByAccountNumber(formattedAccountNumber).orElseThrow(() -> {
-                 log.warn("No User");
-                 throw new AccountNotFoundException("There isn't any account like that");
-                         });
+        BankAccount account = reposition.findByAccountNumberAndAppUserUsername(formattedAccountNumber,authenticatedUserName)
+                .orElseThrow(()->{
+                    log.warn("Account doesn't exist");
+                    return new AccountNotFoundException("Account doesn't exist");
+                });
         BigDecimal newBalanceDepo = account.getBalance().add(validatedAmount);
         account.setBalance(newBalanceDepo);
         log.info("Deposit operation is successful. Account Number : {}, Current Balance: {} ", accountNumber, account.getBalance());
@@ -154,29 +156,51 @@ public class BankService {
     }
 
     @Transactional(readOnly = true)
-    public BankAccountResponseDto getAccount(String accountNumber){
+    public BankAccountResponseDto getAccount(String accountNumber,String authenticatedUserName){
         String formattedAccountNumber =
                 formatAccountNumber(accountNumber);
         log.info("Account is being read from database : {}",formattedAccountNumber);
 
-        BankAccount bankAccount = reposition.findByAccountNumber(formattedAccountNumber)
-                .orElseThrow(() -> {
-        log.warn("Account doesn't exist");
-        return new AccountNotFoundException("Account doesn't exist");
-        });
+        BankAccount bankAccount = reposition.findByAccountNumberAndAppUserUsername(formattedAccountNumber,authenticatedUserName)
+                .orElseThrow(()->{
+                    log.warn("Account doesn't exist");
+                    return new AccountNotFoundException("Account doesn't exist");
+                });
         return  BankAccountMapper.toDto(bankAccount);
     }
 
 
     @Transactional
-    public void deleteAccount(String accountNumber){
+    public void deleteAccount(String accountNumber,String authenticatedUserName){
         String formattedAccountNumber =
                 formatAccountNumber(accountNumber);
-        BankAccount bankAccount = reposition.findByAccountNumber(formattedAccountNumber)
-                .orElseThrow(() -> {
-                    log.warn("Account doesn't exist. Account Number: {}", formattedAccountNumber);
+
+        AppUser authenticatedUser = appUserRepository
+                .findByUsername(authenticatedUserName)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException("User not found")
+                );
+
+        BankAccount bankAccount;
+
+        if (authenticatedUser.getRole() == Role.ADMIN) {
+            bankAccount = reposition
+                    .findByAccountNumber(formattedAccountNumber)
+                    .orElseThrow(() -> {
+                        log.warn("Account doesn't exist");
+                        return new AccountNotFoundException("Account doesn't exist");
+                    });
+        } else {
+            bankAccount = reposition
+                    .findByAccountNumberAndAppUserUsername(
+                            formattedAccountNumber,
+                            authenticatedUserName
+                    )
+                    .orElseThrow(() -> {
+                    log.warn("Account doesn't exist");
                     return new AccountNotFoundException("Account doesn't exist");
                 });
+        }
 
 
         reposition.delete(bankAccount);
@@ -190,9 +214,8 @@ public class BankService {
 
 
     @Transactional(readOnly = true)
-
-    public List<BankAccountResponseDto> getAccountsWithBalanceGreaterThan(BigDecimal minBalance) {
-        return reposition.findByBalanceGreaterThan(minBalance)
+    public List<BankAccountResponseDto> getAccountsWithBalanceGreaterThan(BigDecimal minBalance,String authenticatedUserName) {
+        return reposition.findByBalanceGreaterThanAndAppUserUsername(minBalance,authenticatedUserName)
                 .stream().map(BankAccountMapper::toDto).toList();
         
     }

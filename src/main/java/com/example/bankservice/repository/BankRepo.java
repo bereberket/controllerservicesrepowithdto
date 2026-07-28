@@ -13,5 +13,9 @@ public interface BankRepo extends JpaRepository<BankAccount, Long> {
     Optional<BankAccount> findByAccountNumber(String accountNumber);
 
     List<BankAccount> findByBalanceGreaterThan(BigDecimal minBalance);
+
+    Optional<BankAccount> findByAccountNumberAndAppUserUsername(String accountNumber, String username);
+
+    List<BankAccount> findByBalanceGreaterThanAndAppUserUsername(BigDecimal minBalance, String username);
 }
 

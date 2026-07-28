@@ -9,7 +9,6 @@ import com.example.bankservice.repository.OutboxRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import tools.jackson.core.JacksonException;
@@ -34,7 +33,6 @@ class OutboxEventProcessorTest {
     @Mock
     private AccountCreatedPublisher accountCreatedPublisher;
 
-    @InjectMocks
     private OutboxEventProcessor outboxEventProcessor;
 
     @BeforeEach
