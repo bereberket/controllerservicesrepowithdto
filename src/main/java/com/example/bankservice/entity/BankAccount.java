@@ -20,6 +20,10 @@ public class BankAccount {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
+    @Version
+    @Column(nullable = false)
+    private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY,optional = false)
     @JoinColumn(name = "USER_ID", nullable = false)
     private AppUser appUser;

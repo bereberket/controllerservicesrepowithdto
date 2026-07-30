@@ -18,7 +18,9 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
@@ -206,10 +208,39 @@ public class BankService {
         reposition.delete(bankAccount);
     }
     @Transactional(readOnly = true)
-    public Page<BankAccountResponseDto> getAllAccounts(Pageable pageable){
+    public Page<BankAccountResponseDto> getAllAccounts(
+            int page,
+            int size,
+            String sortBy,
+            String direction
+    ){
+        Sort.Direction sortDirection;
+        if(direction.equalsIgnoreCase("asc")){
+            sortDirection = Sort.Direction.ASC;
+        }else if(direction.equalsIgnoreCase("desc")){
+            sortDirection = Sort.Direction.DESC;
+        }else{
+            throw new IllegalArgumentException("Must be ASC or DESC");
+        }
+
+        List<String> allowedSortFields = List.of("id", "name", "balance","accountNumber");
+
+        if(!allowedSortFields.contains(sortBy)){
+            throw new IllegalArgumentException("Invalid sort parameter");
+        }
+        if(page<0){
+            throw new IllegalArgumentException("Must be positive");
+        }
+        if(size<1 || size>100){
+            throw new IllegalArgumentException("Page size must be between 1 and 100");
+        }
+        Pageable pageable =
+                PageRequest.of(page, size, sortDirection, sortBy);
+
         return reposition.findAll(pageable)
                 .map(BankAccountMapper::toDto);
     }
+
 
 
 
@@ -243,8 +274,22 @@ public class BankService {
         });
 
         appUserRepository.delete(appUser);
+    }
 
-
-
+    @Transactional
+    public List<BankAccountResponseDto> createAccounts(
+            List<CreateAccountRequestDto> requestDtos,
+            String authenticatedUserName
+    ) {
+        if (requestDtos == null || requestDtos.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "At least one account request is required"
+            );
+        }
+        return requestDtos.stream()
+                .map(dto -> createAccount(dto, authenticatedUserName))
+                .toList();
     }
 }
+
+

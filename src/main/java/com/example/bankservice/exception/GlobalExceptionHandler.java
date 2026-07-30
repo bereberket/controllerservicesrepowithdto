@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -100,6 +101,21 @@ public class GlobalExceptionHandler {
         log.warn("Bad User State");
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
 
+    }
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ErrorResponseDto> handleOptimisticLockingFailure(ObjectOptimisticLockingFailureException exception){
+        log.warn(
+                "Concurrent account update detected. Entity: {}, ID: {}",
+                exception.getPersistentClassName(),
+                exception.getIdentifier()
+        );
+        ErrorResponseDto error = new ErrorResponseDto(
+                "The account was changed by another operation. Please try again.",
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase()
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 }
 
