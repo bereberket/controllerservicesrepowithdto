@@ -35,7 +35,9 @@ public class OutboxEventProcessor {
 
     @Transactional
     public void process(String eventId){
-        OutboxEvent outboxEvent = outboxRepository.findById(eventId).orElse(null);
+        OutboxEvent outboxEvent = outboxRepository
+                .findByIdForUpdate(eventId)
+                .orElse(null);
         if(outboxEvent == null){
             return;
         }

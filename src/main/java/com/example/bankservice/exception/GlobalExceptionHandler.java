@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -81,7 +82,7 @@ public class GlobalExceptionHandler {
 
 
         ErrorResponseDto error = new ErrorResponseDto(
-                exception.getMessage(),
+                message,
                 400,
                 "Bad Request"
 
@@ -111,6 +112,24 @@ public class GlobalExceptionHandler {
         );
         ErrorResponseDto error = new ErrorResponseDto(
                 "The account was changed by another operation. Please try again.",
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase()
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponseDto> handleDataIntegrityViolation(
+            DataIntegrityViolationException exception
+    ) {
+        log.warn(
+                "A database uniqueness or integrity constraint was violated: {}",
+                exception.getMostSpecificCause().getMessage()
+        );
+
+        ErrorResponseDto error = new ErrorResponseDto(
+                "The requested operation conflicts with an existing database constraint.",
                 HttpStatus.CONFLICT.value(),
                 HttpStatus.CONFLICT.getReasonPhrase()
         );
