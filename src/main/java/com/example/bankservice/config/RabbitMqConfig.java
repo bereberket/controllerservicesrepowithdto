@@ -75,17 +75,11 @@ public class RabbitMqConfig {
             @Qualifier("bankEventsDeadLetterExchange")
             DirectExchange deadLetterExchange
     ){
-                return BindingBuilder
-                        .bind(deadLetterQueue)
-                        .to(deadLetterExchange)
-                        .with(ACCOUNT_CREATED_FAILED_ROUTING_KEY);
+        return BindingBuilder
+                .bind(deadLetterQueue)
+                .to(deadLetterExchange)
+                .with(ACCOUNT_CREATED_FAILED_ROUTING_KEY);
     }
-
-
-
-
-
-
 
     @Bean
     public MessageConverter jsonMessageConverter(){
