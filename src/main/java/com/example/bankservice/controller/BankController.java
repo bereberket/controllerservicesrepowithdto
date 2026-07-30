@@ -27,57 +27,43 @@ import static java.util.stream.Collectors.toList;
 @RequestMapping("/api/accounts/")
 public class BankController {
     private final BankService bankService;
-    private final AuthService authService;
 
 
-    public BankController(BankService bankService, AuthService authService) {                           // constructor injection
+    public BankController(BankService bankService) {                           // constructor injection
         this.bankService = bankService;
-        this.authService = authService;
     }
 
     @PostMapping("{accountNumber}/withdraw")
 
     public ResponseEntity<BankAccountResponseDto> withdraw(@PathVariable String accountNumber, @RequestParam BigDecimal amount,Authentication authentication) {
-        String authenticatedUserName = authentication.getName();
-        BankAccountResponseDto account = bankService.withdraw(accountNumber,amount,authenticatedUserName);
-        return ResponseEntity.ok(account);
+
+        return ResponseEntity.ok(bankService.withdraw(accountNumber, amount,authentication.getName() ));
     }
 
     @PostMapping("{accountNumber}/deposit")
     public ResponseEntity<BankAccountResponseDto> deposit(@PathVariable String accountNumber, @RequestParam BigDecimal depositAmount,Authentication authentication){
-        String authenticatedUserName = authentication.getName();
-        BankAccountResponseDto account = bankService.deposit(accountNumber, depositAmount, authenticatedUserName);
-        return ResponseEntity.ok(account);
+
+        return ResponseEntity.ok(bankService.deposit(accountNumber,depositAmount,authentication.getName()));
     }
 
     @PostMapping("createAccount")
-    public ResponseEntity<List<BankAccountResponseDto>> createAccount(
-            @RequestBody List< @Valid CreateAccountRequestDto> requestDto,
-            Authentication authentication) {
+    public ResponseEntity<BankAccountResponseDto> createAccount(@RequestBody @Valid CreateAccountRequestDto requestDto,Authentication authentication) {
 
-        String username = authentication.getName();
-
-
-        List<BankAccountResponseDto> responses = requestDto.stream()
-                .map(dto -> bankService.createAccount(dto,username))
-                .toList();
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(responses);
+                .body(bankService.createAccount(requestDto,authentication.getName()));
 
     }
 
     @GetMapping("{accountNumber}/getAccount")
     public ResponseEntity<BankAccountResponseDto> getAccount(@PathVariable String accountNumber,Authentication authentication) {
-        String authenticatedUserName = authentication.getName();
-        BankAccountResponseDto account = bankService.getAccount(accountNumber,authenticatedUserName);
-        return ResponseEntity.ok(account);
+
+        return ResponseEntity.ok(bankService.getAccount(accountNumber, authentication.getName()));
     }
 
     @DeleteMapping("{accountNumber}")
     public ResponseEntity<Void> deleteAccount(@PathVariable String accountNumber,Authentication authentication) {
-        String authenticatedUserName = authentication.getName();
-        bankService.deleteAccount(accountNumber,authenticatedUserName);
+        bankService.deleteAccount(accountNumber,authentication.getName());
         return ResponseEntity.noContent().build();
     }
 
@@ -88,43 +74,14 @@ public class BankController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "asc") String direction
-    ) {
-        Sort.Direction sortDirection;
-               if(direction.equalsIgnoreCase("asc")){
-                   sortDirection = Sort.Direction.ASC;
-               }else if(direction.equalsIgnoreCase("desc")){
-                   sortDirection = Sort.Direction.DESC;
-               }else{
-                   throw new IllegalArgumentException("Must be ASC or DESC");
-               }
-
-        List<String> allowedSortFields = List.of("id", "name", "balance","accountNumber");
-
-        if(!allowedSortFields.contains(sortBy)){
-            throw new IllegalArgumentException("Invalid sort parameter");
-        }
-        if(page<0){
-            throw new IllegalArgumentException("Must be positive");
-        }
-        if(size<1 || size>100){
-            throw new IllegalArgumentException("Page size must be between 1 and 100");
-        }
-
-        Pageable pageable = PageRequest.of(page,size,sortDirection,sortBy);
-
-        Page <BankAccountResponseDto> accounts =
-                bankService.getAllAccounts(pageable);
-
-
-
-        return ResponseEntity.ok(accounts);
+    ){
+        return ResponseEntity.ok(bankService.getAllAccounts(page,size,sortBy,direction));
     }
 
     @GetMapping("/search")
     public ResponseEntity<List<BankAccountResponseDto>> getAccountsWithBalanceGreaterThan(@RequestParam BigDecimal minBalance, Authentication authentication) {
-        String authenticatedUserName = authentication.getName();
-        List<BankAccountResponseDto> accounts = bankService.getAccountsWithBalanceGreaterThan(minBalance,authenticatedUserName);
-        return ResponseEntity.ok(accounts);
+
+        return ResponseEntity.ok(bankService.getAccountsWithBalanceGreaterThan(minBalance,authentication.getName()));
 
     }
     @DeleteMapping("/deleteuser/{userName}")
@@ -132,5 +89,22 @@ public class BankController {
         bankService.deleteUser(userName);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("createAccounts")
+    public ResponseEntity<List<BankAccountResponseDto>> createAccounts(
+            @RequestBody List<@Valid CreateAccountRequestDto> requestDtos,
+            Authentication authentication
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(
+                        bankService.createAccounts(
+                                requestDtos,
+                                authentication.getName()
+                        )
+                );
+    }
+
+
 }
 
