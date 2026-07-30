@@ -82,6 +82,15 @@ public class SecurityConfig {
                                 HttpMethod.POST,
                                 "/api/admin/outbox/**"
                         ).hasRole("ADMIN")
+                        .requestMatchers(
+                                "/api/auth/register",
+                                "/api/auth/login",
+                                "/h2-console/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        )
+                        .permitAll()
 
                         .anyRequest().authenticated()
                 )
