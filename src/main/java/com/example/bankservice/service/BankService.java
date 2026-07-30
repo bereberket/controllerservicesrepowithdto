@@ -11,12 +11,8 @@ import com.example.bankservice.exception.InvalidAmountException;
 import com.example.bankservice.enums.Role;
 import com.example.bankservice.mapper.BankAccountMapper;
 import com.example.bankservice.messaging.AccountCreatedEvent;
-import com.example.bankservice.messaging.AccountCreatedPublisher;
 import com.example.bankservice.repository.AppUserRepository;
 import com.example.bankservice.repository.BankRepo;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,10 +27,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
-
 @Service
 public class BankService {
 
@@ -50,7 +43,7 @@ public class BankService {
         this.reposition = reposition;
         this.appUserRepository = appUserRepository;
         this.outboxService = outboxService;
-    }            //burada da constructor injeciton var.
+    }
 
     private String formatAccountNumber(String accountNumber){
         if(accountNumber == null || accountNumber.isBlank()){
@@ -118,9 +111,9 @@ public class BankService {
         BigDecimal validatedAmount = validateMoneyAmount(amount);
         log.info("Withdraw operation started. Account Number: {}, Amount of Withdraw: {}", formattedAccountNumber, amount);
 
-        BankAccount account = reposition.findByAccountNumberAndAppUserUsername(formattedAccountNumber,authenticatedUserName)
+        BankAccount account = reposition.findOwnedAccountForUpdate(formattedAccountNumber,authenticatedUserName)
                 .orElseThrow(()->{
-                    log.warn("Account doesn't exist");
+                    log.warn("Account not find");
                     return new AccountNotFoundException("Account doesn't exist");
                 });
 
@@ -148,7 +141,7 @@ public class BankService {
 
         BankAccount account = reposition.findByAccountNumberAndAppUserUsername(formattedAccountNumber,authenticatedUserName)
                 .orElseThrow(()->{
-                    log.warn("Account doesn't exist");
+                    log.warn("Account not exist");
                     return new AccountNotFoundException("Account doesn't exist");
                 });
         BigDecimal newBalanceDepo = account.getBalance().add(validatedAmount);
@@ -165,7 +158,7 @@ public class BankService {
 
         BankAccount bankAccount = reposition.findByAccountNumberAndAppUserUsername(formattedAccountNumber,authenticatedUserName)
                 .orElseThrow(()->{
-                    log.warn("Account doesn't exist");
+                    log.warn("Account do not exist");
                     return new AccountNotFoundException("Account doesn't exist");
                 });
         return  BankAccountMapper.toDto(bankAccount);
@@ -189,7 +182,7 @@ public class BankService {
             bankAccount = reposition
                     .findByAccountNumber(formattedAccountNumber)
                     .orElseThrow(() -> {
-                        log.warn("Account doesn't exist");
+                        log.warn("Account don't found");
                         return new AccountNotFoundException("Account doesn't exist");
                     });
         } else {

@@ -4,6 +4,7 @@ import com.example.bankservice.entity.AppUser;
 import com.example.bankservice.entity.BankAccount;
 import com.example.bankservice.enums.ActiveSituation;
 import com.example.bankservice.enums.Role;
+import com.example.bankservice.Enums.WithdrawalResult;
 import com.example.bankservice.exception.InsufficientBalanceException;
 import com.example.bankservice.repository.AppUserRepository;
 import com.example.bankservice.repository.BankRepo;
@@ -14,6 +15,8 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.*;
 
@@ -21,8 +24,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
-
-
 public class BankAccountConcurrencyIntegrationTest {
     @Autowired
     private BankService bankService;
@@ -67,28 +68,30 @@ public class BankAccountConcurrencyIntegrationTest {
         CountDownLatch readyLatch = new CountDownLatch(2);
         CountDownLatch startLatch = new CountDownLatch(1);
 
-        Callable<Boolean> withdrawTask = ()-> {
+        Callable<WithdrawalResult> withdrawTask = ()-> {
             readyLatch.countDown();
             startLatch.await();
 
 
             try {
-                bankService.withdraw(accountNumber, new BigDecimal("80.0"), username);
-                return true;
-            } catch (InsufficientBalanceException | ObjectOptimisticLockingFailureException exception){
-                return false;
+                bankService.withdraw(accountNumber, new BigDecimal("80.00"), username);
+                return WithdrawalResult.SUCCESS;
+            } catch (InsufficientBalanceException exception){
+                return WithdrawalResult.INSUFFICIENT_BALANCE;
+            }catch(ObjectOptimisticLockingFailureException exception){
+                return WithdrawalResult.OPTIMISTIC_CONFLICT;
             }
 
         };
 
-        boolean firstSuccessful;
-        boolean secondSuccessful;
+        WithdrawalResult firstResult;
+        WithdrawalResult secondResult;
 
         try{
-            Future<Boolean> firstFuture =
+            Future<WithdrawalResult> firstFuture =
                     executorService.submit(withdrawTask);
 
-            Future<Boolean> secondFuture =
+            Future<WithdrawalResult> secondFuture =
                     executorService.submit(withdrawTask);
 
             boolean bothThreadsAreReady =
@@ -100,25 +103,22 @@ public class BankAccountConcurrencyIntegrationTest {
             );
             startLatch.countDown();
 
-            firstSuccessful =
+            firstResult =
                     firstFuture.get(5, TimeUnit.SECONDS);
 
-            secondSuccessful =
+            secondResult =
                     secondFuture.get(5, TimeUnit.SECONDS);
         } finally {
             executorService.shutdownNow();
         }
 
-        int successfulWithdrawalCount = 0;
+       List<WithdrawalResult> resultList =
+               List.of(firstResult, secondResult);
 
-        if(firstSuccessful){
-            successfulWithdrawalCount++;
-        }
-        if(secondSuccessful){
-            successfulWithdrawalCount++;
-        }
+        assertEquals(1, Collections.frequency(resultList, WithdrawalResult.INSUFFICIENT_BALANCE));
+        assertEquals(1,Collections.frequency(resultList,WithdrawalResult.SUCCESS));
+        assertEquals(0,Collections.frequency(resultList, WithdrawalResult.OPTIMISTIC_CONFLICT));
 
-        assertEquals(1,successfulWithdrawalCount,"Only one withdrawal should sucedded");
 
         BankAccount updatedAccount =
                 bankRepo.findByAccountNumberAndAppUserUsername(
@@ -129,6 +129,10 @@ public class BankAccountConcurrencyIntegrationTest {
         assertEquals(
                 new BigDecimal("20.00"),
                 updatedAccount.getBalance()
+        );
+        assertEquals(
+                initialVersion + 1,
+                updatedAccount.getVersion()
         );
 
 

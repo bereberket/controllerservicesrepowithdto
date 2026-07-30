@@ -1,4 +1,4 @@
-package com.example.bankservice.enums;
+package com.example.bankservice.Enums;
 
 public enum WithdrawalResult {
     SUCCESS,

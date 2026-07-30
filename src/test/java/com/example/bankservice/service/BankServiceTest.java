@@ -142,7 +142,7 @@ public class BankServiceTest {
         account.setAccountNumber("TR123");
         account.setBalance(new BigDecimal("100.30"));
 
-        when(bankRepo.findByAccountNumberAndAppUserUsername(
+        when(bankRepo.findOwnedAccountForUpdate(
                 "TR123",
                 authenticatedUserName
         ))
@@ -154,7 +154,7 @@ public class BankServiceTest {
         assertEquals(new BigDecimal("100.10"), result.getBalance());
         assertEquals(new BigDecimal("100.10"), account.getBalance());
 
-        verify(bankRepo).findByAccountNumberAndAppUserUsername(
+        verify(bankRepo).findOwnedAccountForUpdate(
                 "TR123",
                 authenticatedUserName
         );
