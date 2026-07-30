@@ -45,6 +45,8 @@ public class AccountCreatingOutboxIntegrationTest {
     void contextLoads(){
     }
 
+
+
     @Test
     void bankServiceBean_shouldBeLoaded(){
         assertNotNull(bankService);
