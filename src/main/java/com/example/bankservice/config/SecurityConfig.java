@@ -1,6 +1,6 @@
 package com.example.bankservice.config;
 
-import com.example.bankservice.enums.Role;
+import com.example.bankservice.enums.ActiveSituation;
 import com.example.bankservice.repository.AppUserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,8 +15,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import com.example.bankservice.entity.AppUser;
 import org.springframework.security.web.SecurityFilterChain;
-
-import static org.springframework.security.authorization.SingleResultAuthorizationManager.permitAll;
 
 @Configuration
 public class SecurityConfig {
@@ -44,6 +42,7 @@ public class SecurityConfig {
                     .username(appUser.getUsername())
                     .password(appUser.getPassword())
                     .roles(appUser.getRole().name())
+                    .disabled(appUser.getState() != ActiveSituation.ACTIVE)
                     .build();
 
         };
@@ -58,7 +57,10 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/register",
                                 "/api/auth/login",
-                                "/h2-console/**")
+                                "/h2-console/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html")
                         .permitAll()
 
                         .requestMatchers(
@@ -82,15 +84,6 @@ public class SecurityConfig {
                                 HttpMethod.POST,
                                 "/api/admin/outbox/**"
                         ).hasRole("ADMIN")
-                        .requestMatchers(
-                                "/api/auth/register",
-                                "/api/auth/login",
-                                "/h2-console/**",
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html"
-                        )
-                        .permitAll()
 
                         .anyRequest().authenticated()
                 )

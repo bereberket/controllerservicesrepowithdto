@@ -244,18 +244,6 @@ public class BankService {
         
     }
 
-    @Transactional(readOnly = true)
-    public BankAccountResponseDto getAccFindByName(String name) {
-        BankAccount bankAccount = reposition.findByName(name)
-                .orElseThrow(() -> {
-                    log.warn("Account doesn't exist. Name: {}", name);
-                    return new AccountNotFoundException(
-                            "Account doesn't exist. Name: " + name
-                    );
-                });
-
-        return BankAccountMapper.toDto(bankAccount);
-    }
     @Transactional
     public void deleteUser(String userName){
 

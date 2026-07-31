@@ -12,11 +12,7 @@ import java.util.List;
 import  java.util.Optional;
 
 public interface BankRepo extends JpaRepository<BankAccount, Long> {
-    Optional<BankAccount> findByName(String name);
-
     Optional<BankAccount> findByAccountNumber(String accountNumber);
-
-    List<BankAccount> findByBalanceGreaterThan(BigDecimal minBalance);
 
     Optional<BankAccount> findByAccountNumberAndAppUserUsername(String accountNumber, String username);
 

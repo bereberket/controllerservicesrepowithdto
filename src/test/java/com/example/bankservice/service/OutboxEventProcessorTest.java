@@ -52,14 +52,14 @@ class OutboxEventProcessorTest {
         String eventId =
                 "88888888-8888-8888-8888-888888888888";
 
-        when(outboxRepository.findById(eventId))
+        when(outboxRepository.findByIdForUpdate(eventId))
                 .thenReturn(Optional.empty());
 
         // ACT
         outboxEventProcessor.process(eventId);
 
         // ASSERT
-        verify(outboxRepository).findById(eventId);
+        verify(outboxRepository).findByIdForUpdate(eventId);
         verifyNoInteractions(objectMapper);
         verifyNoInteractions(accountCreatedPublisher);
     }
@@ -80,7 +80,7 @@ class OutboxEventProcessorTest {
 
         outboxEvent.markPublished();
 
-        when(outboxRepository.findById(eventId))
+        when(outboxRepository.findByIdForUpdate(eventId))
                 .thenReturn(Optional.of(outboxEvent));
 
         // ACT
@@ -93,7 +93,7 @@ class OutboxEventProcessorTest {
         );
         assertNotNull(outboxEvent.getPublishedAt());
 
-        verify(outboxRepository).findById(eventId);
+        verify(outboxRepository).findByIdForUpdate(eventId);
         verifyNoInteractions(objectMapper);
         verifyNoInteractions(accountCreatedPublisher);
     }
@@ -135,7 +135,7 @@ class OutboxEventProcessorTest {
                         null
                 );
 
-        when(outboxRepository.findById(eventId))
+        when(outboxRepository.findByIdForUpdate(eventId))
                 .thenReturn(Optional.of(outboxEvent));
 
         when(objectMapper.readValue(
@@ -158,7 +158,7 @@ class OutboxEventProcessorTest {
         assertEquals(0, outboxEvent.getRetryCount());
         assertNull(outboxEvent.getLastError());
 
-        verify(outboxRepository).findById(eventId);
+        verify(outboxRepository).findByIdForUpdate(eventId);
 
         verify(objectMapper).readValue(
                 payload,
@@ -206,7 +206,7 @@ class OutboxEventProcessorTest {
                         "Exceed try"
                 );
 
-        when(outboxRepository.findById(eventId))
+        when(outboxRepository.findByIdForUpdate(eventId))
                 .thenReturn(Optional.of(outboxEvent));
 
         when(objectMapper.readValue(
@@ -232,7 +232,7 @@ class OutboxEventProcessorTest {
         );
         assertNull(outboxEvent.getPublishedAt());
 
-        verify(outboxRepository).findById(eventId);
+        verify(outboxRepository).findByIdForUpdate(eventId);
 
         verify(objectMapper).readValue(
                 payload,
@@ -263,7 +263,7 @@ class OutboxEventProcessorTest {
                         payload
                 );
 
-        when(outboxRepository.findById(eventId)).
+        when(outboxRepository.findByIdForUpdate(eventId)).
                 thenReturn(Optional.of(outboxEvent));
 
 
@@ -293,7 +293,7 @@ class OutboxEventProcessorTest {
 
         assertNull(outboxEvent.getPublishedAt());
 
-        verify(outboxRepository).findById(eventId);
+        verify(outboxRepository).findByIdForUpdate(eventId);
 
         verify(objectMapper).readValue(
                 payload,
@@ -344,7 +344,7 @@ class OutboxEventProcessorTest {
                 );
 
 
-        when(outboxRepository.findById(eventId))
+        when(outboxRepository.findByIdForUpdate(eventId))
                 .thenReturn(Optional.of(outboxEvent));
         when(objectMapper.readValue(
                 payload,
@@ -370,7 +370,7 @@ class OutboxEventProcessorTest {
         assertEquals("Maximum retry count is reached",outboxEvent.getLastError());
         assertNull(outboxEvent.getPublishedAt());
 
-        verify(outboxRepository).findById(eventId);
+        verify(outboxRepository).findByIdForUpdate(eventId);
         verify(objectMapper).readValue(
                 payload,
                 AccountCreatedEvent.class

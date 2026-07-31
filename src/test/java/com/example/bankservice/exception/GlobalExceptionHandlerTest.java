@@ -1,6 +1,7 @@
 package com.example.bankservice.exception;
 
 import com.example.bankservice.controller.BankController;
+import com.example.bankservice.dto.CreateAccountRequestDto;
 import com.example.bankservice.entity.BankAccount;
 import com.example.bankservice.service.AuthService;
 import com.example.bankservice.service.BankService;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -89,5 +91,78 @@ public class GlobalExceptionHandlerTest {
 
     }
 
+    @Test
+    void createAccount_shouldReturnFieldMessage_whenRequestIsInvalid()
+            throws Exception {
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(
+                        "berk",
+                        "test-password"
+                );
+
+        mockMvc.perform(
+                        post("/api/accounts/createAccount")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "name": "Main Account",
+                                          "accountNumber": ""
+                                        }
+                                        """)
+                                .principal(authentication)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(jsonPath("$.message").value(
+                        "Account Number shouldn't be null"
+                ));
+
+        verifyNoInteractions(bankService);
+    }
+
+    @Test
+    void createAccount_shouldReturn409_whenUniqueConstraintIsViolated()
+            throws Exception {
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(
+                        "berk",
+                        "test-password"
+                );
+
+        when(bankService.createAccount(
+                any(CreateAccountRequestDto.class),
+                eq("berk")
+        )).thenThrow(
+                new DataIntegrityViolationException(
+                        "Unique account number constraint"
+                )
+        );
+
+        mockMvc.perform(
+                        post("/api/accounts/createAccount")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "name": "Main Account",
+                                          "accountNumber": "TR100"
+                                        }
+                                        """)
+                                .principal(authentication)
+                )
+                .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.error").value("Conflict"))
+                .andExpect(jsonPath("$.message").value(
+                        "The requested operation conflicts with an existing database constraint."
+                ));
+
+        verify(bankService).createAccount(
+                any(CreateAccountRequestDto.class),
+                eq("berk")
+        );
+    }
 
 }

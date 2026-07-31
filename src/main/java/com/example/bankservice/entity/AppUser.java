@@ -2,7 +2,6 @@ package com.example.bankservice.entity;
 
 import com.example.bankservice.enums.ActiveSituation;
 import com.example.bankservice.enums.Role;
-import com.example.bankservice.repository.BankRepo;
 import jakarta.persistence.*;
 
 

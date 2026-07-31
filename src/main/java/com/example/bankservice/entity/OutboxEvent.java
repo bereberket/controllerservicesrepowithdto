@@ -10,7 +10,6 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.Getter;
 
-import javax.swing.tree.AbstractLayoutCache;
 import java.time.Instant;
 
 @Getter
