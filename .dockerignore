@@ -1,0 +1,15 @@
+.git
+.gitignore
+.idea
+target
+data
+exportToHTML
+
+*.iml
+*.eml
+*.userlibraries
+*.zip
+*.log
+*.mv.db
+*.trace.db
+.env
