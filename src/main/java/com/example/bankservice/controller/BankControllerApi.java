@@ -2,6 +2,8 @@ package com.example.bankservice.controller;
 
 import com.example.bankservice.dto.BankAccountResponseDto;
 import com.example.bankservice.dto.CreateAccountRequestDto;
+import com.example.bankservice.dto.TransferMethodDto;
+import com.example.bankservice.dto.TransferResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -104,6 +106,12 @@ public interface BankControllerApi {
     @PostMapping("/createAccounts")
     ResponseEntity<List<BankAccountResponseDto>> createAccounts(
             @RequestBody List<@Valid CreateAccountRequestDto> requestDtos,
+            Authentication authentication
+    );
+
+    @PostMapping("/transfer")
+    ResponseEntity<TransferResponseDto> transfer(
+            @Valid @RequestBody TransferMethodDto transferMethodDto,
             Authentication authentication
     );
 }
