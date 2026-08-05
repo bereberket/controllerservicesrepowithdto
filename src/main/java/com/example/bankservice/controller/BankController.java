@@ -2,6 +2,8 @@ package com.example.bankservice.controller;
 
 
 import com.example.bankservice.dto.BankAccountResponseDto;
+import com.example.bankservice.dto.TransferMethodDto;
+import com.example.bankservice.dto.TransferResponseDto;
 import com.example.bankservice.service.BankService;
 import com.example.bankservice.dto.CreateAccountRequestDto;
 import org.springframework.data.domain.Page;
@@ -91,6 +93,11 @@ public class BankController implements BankControllerApi {
                                 authentication.getName()
                         )
                 );
+    }
+    @Override
+    public ResponseEntity<TransferResponseDto> transfer(TransferMethodDto transferMethodDto, Authentication authentication){
+
+        return ResponseEntity.ok(bankService.transfer(transferMethodDto, authentication.getName()));
     }
 
 

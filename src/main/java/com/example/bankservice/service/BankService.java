@@ -2,6 +2,8 @@ package com.example.bankservice.service;
 
 import com.example.bankservice.dto.BankAccountResponseDto;
 import com.example.bankservice.dto.CreateAccountRequestDto;
+import com.example.bankservice.dto.TransferMethodDto;
+import com.example.bankservice.dto.TransferResponseDto;
 import com.example.bankservice.entity.AppUser;
 import com.example.bankservice.entity.BankAccount;
 import com.example.bankservice.exception.AccountAlreadyExistsException;
@@ -10,6 +12,7 @@ import com.example.bankservice.exception.InsufficientBalanceException;
 import com.example.bankservice.exception.InvalidAmountException;
 import com.example.bankservice.enums.Role;
 import com.example.bankservice.mapper.BankAccountMapper;
+import com.example.bankservice.mapper.TransferMapper;
 import com.example.bankservice.messaging.AccountCreatedEvent;
 import com.example.bankservice.repository.AppUserRepository;
 import com.example.bankservice.repository.BankRepo;
@@ -270,6 +273,78 @@ public class BankService {
         return requestDtos.stream()
                 .map(dto -> createAccount(dto, authenticatedUserName))
                 .toList();
+    }
+
+    @Transactional
+    public TransferResponseDto transfer(TransferMethodDto transferMethodDto, String authenticatedUserName){
+        String formattedSourceNumber =
+                formatAccountNumber(transferMethodDto.getSourceAccountNumber());
+        String formattedTargetNumber =
+                formatAccountNumber(transferMethodDto.getTargetAccountNumber());
+
+        String firstAccountNumber;
+        String secondAccountNumber;
+
+        if(formattedSourceNumber.compareTo(formattedTargetNumber)<0){
+            firstAccountNumber = formattedSourceNumber;
+            secondAccountNumber = formattedTargetNumber;
+        }else{
+            firstAccountNumber = formattedTargetNumber;
+            secondAccountNumber = formattedSourceNumber;
+        }
+
+        BankAccount sourceAccount;
+        BankAccount targetAccount;
+
+        BankAccount firstLockedNumber = reposition.findAccountForUpdate(firstAccountNumber)
+                .orElseThrow(() -> {
+                    log.warn("Source account does not exist");
+                    return new AccountNotFoundException("Account not found");
+                });
+
+        BankAccount secondTargetNumber = reposition.findAccountForUpdate(secondAccountNumber)
+                .orElseThrow(() -> {
+                    log.warn("Target account does not exist");
+                    return new AccountNotFoundException("Account not found");
+                });
+        if (firstLockedNumber.getAccountNumber()
+                .equals(formattedSourceNumber)) {
+
+            sourceAccount = firstLockedNumber;
+            targetAccount = secondTargetNumber;
+
+        } else {
+            sourceAccount = secondTargetNumber;
+            targetAccount = firstLockedNumber;
+        }
+        if(sourceAccount.getAccountNumber().equals(targetAccount.getAccountNumber())){
+            log.info("Source and target account are same!");
+            throw new IllegalArgumentException("Beneficiary and sender account must be different");
+        }
+        if(!sourceAccount.getAppUser().getUsername().equals(authenticatedUserName)){
+            log.warn("Account does not exist");
+            throw new AccountNotFoundException("Account doesn't found!");
+        }
+
+        BigDecimal validatedTransferAmount = validateMoneyAmount(transferMethodDto.getAmount());
+
+        if(validatedTransferAmount.compareTo(sourceAccount.getBalance())>0){
+            log.warn("Insufficient balance");
+            throw new InsufficientBalanceException("Your balance is insufficient");
+        }
+
+
+        BigDecimal newBalanceTarget = targetAccount.getBalance().add(validatedTransferAmount);
+
+        BigDecimal newBalanceSource = sourceAccount.getBalance().subtract(validatedTransferAmount);
+
+        targetAccount.setBalance(newBalanceTarget);
+        sourceAccount.setBalance(newBalanceSource);
+
+        return TransferMapper.toDto(
+                sourceAccount,
+                targetAccount,
+                validatedTransferAmount);
     }
 }
 
