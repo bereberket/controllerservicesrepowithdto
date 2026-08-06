@@ -2,7 +2,7 @@ package com.example.bankservice.service;
 
 import com.example.bankservice.dto.BankAccountResponseDto;
 import com.example.bankservice.dto.CreateAccountRequestDto;
-import com.example.bankservice.dto.TransferMethodDto;
+import com.example.bankservice.dto.TransferRequestDto;
 import com.example.bankservice.dto.TransferResponseDto;
 import com.example.bankservice.entity.AppUser;
 import com.example.bankservice.entity.BankAccount;
@@ -276,11 +276,11 @@ public class BankService {
     }
 
     @Transactional
-    public TransferResponseDto transfer(TransferMethodDto transferMethodDto, String authenticatedUserName){
+    public TransferResponseDto transfer(TransferRequestDto transferRequestDto, String authenticatedUserName){
         String formattedSourceNumber =
-                formatAccountNumber(transferMethodDto.getSourceAccountNumber());
+                formatAccountNumber(transferRequestDto.getSourceAccountNumber());
         String formattedTargetNumber =
-                formatAccountNumber(transferMethodDto.getTargetAccountNumber());
+                formatAccountNumber(transferRequestDto.getTargetAccountNumber());
 
         String firstAccountNumber;
         String secondAccountNumber;
@@ -326,7 +326,7 @@ public class BankService {
             throw new AccountNotFoundException("Account doesn't found!");
         }
 
-        BigDecimal validatedTransferAmount = validateMoneyAmount(transferMethodDto.getAmount());
+        BigDecimal validatedTransferAmount = validateMoneyAmount(transferRequestDto.getAmount());
 
         if(validatedTransferAmount.compareTo(sourceAccount.getBalance())>0){
             log.warn("Insufficient balance");

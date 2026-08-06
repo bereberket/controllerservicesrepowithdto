@@ -1,7 +1,7 @@
 package com.example.bankservice.service;
 
 import com.example.bankservice.Enums.TransferResult;
-import com.example.bankservice.dto.TransferMethodDto;
+import com.example.bankservice.dto.TransferRequestDto;
 import com.example.bankservice.entity.AppUser;
 import com.example.bankservice.entity.BankAccount;
 import com.example.bankservice.enums.ActiveSituation;
@@ -100,17 +100,17 @@ public class BankAccountTransferTest {
         CountDownLatch readyLatch = new CountDownLatch(2);
         CountDownLatch startLatch= new CountDownLatch(1);
 
-        TransferMethodDto transferMethodDto = new TransferMethodDto();
-        transferMethodDto.setAmount(amount);
-        transferMethodDto.setSourceAccountNumber(senderAccountNumber);
-        transferMethodDto.setTargetAccountNumber(beneficiaryAccountNumber);
+        TransferRequestDto transferRequestDto = new TransferRequestDto();
+        transferRequestDto.setAmount(amount);
+        transferRequestDto.setSourceAccountNumber(senderAccountNumber);
+        transferRequestDto.setTargetAccountNumber(beneficiaryAccountNumber);
 
         Callable<TransferResult> transferResultCallable  = () -> {
             readyLatch.countDown();
             startLatch.await();
 
             try{
-                bankService.transfer(transferMethodDto, senderUserName);
+                bankService.transfer(transferRequestDto, senderUserName);
                 return TransferResult.SUCCESSFUL;
             }catch(InsufficientBalanceException exception){
                 return TransferResult.INSUFFICIENT_BALANCE;

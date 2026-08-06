@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 
 @Getter
 @Setter
-public class TransferMethodDto {
+public class TransferRequestDto {
     @NotBlank(message = "ID of sender account shouldn't be null")
     private String sourceAccountNumber;
 
@@ -20,6 +20,7 @@ public class TransferMethodDto {
     @NotNull(message = "Amount shouldn't be null")
     @DecimalMin(value = "0.01", message = "Amount must be at least 0.01")
     private BigDecimal amount;
+
 
 
 }

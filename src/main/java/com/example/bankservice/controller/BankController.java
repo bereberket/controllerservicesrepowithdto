@@ -2,7 +2,7 @@ package com.example.bankservice.controller;
 
 
 import com.example.bankservice.dto.BankAccountResponseDto;
-import com.example.bankservice.dto.TransferMethodDto;
+import com.example.bankservice.dto.TransferRequestDto;
 import com.example.bankservice.dto.TransferResponseDto;
 import com.example.bankservice.service.BankService;
 import com.example.bankservice.dto.CreateAccountRequestDto;
@@ -95,9 +95,9 @@ public class BankController implements BankControllerApi {
                 );
     }
     @Override
-    public ResponseEntity<TransferResponseDto> transfer(TransferMethodDto transferMethodDto, Authentication authentication){
+    public ResponseEntity<TransferResponseDto> transfer(TransferRequestDto transferRequestDto, Authentication authentication){
 
-        return ResponseEntity.ok(bankService.transfer(transferMethodDto, authentication.getName()));
+        return ResponseEntity.ok(bankService.transfer(transferRequestDto, authentication.getName()));
     }
 
 
