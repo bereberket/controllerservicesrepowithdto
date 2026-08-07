@@ -26,5 +26,6 @@ public interface OutboxRepository
         Optional<OutboxEvent> findByIdForUpdate(
                 @Param("eventId") String eventId
         );
+
 }
 

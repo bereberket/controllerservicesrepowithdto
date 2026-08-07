@@ -2,6 +2,7 @@ package com.example.bankservice.service;
 
 import com.example.bankservice.entity.OutboxEvent;
 import com.example.bankservice.messaging.AccountCreatedEvent;
+import com.example.bankservice.messaging.TransferCompletedEvent;
 import com.example.bankservice.repository.OutboxRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,9 +13,12 @@ import tools.jackson.databind.ObjectMapper;
 public class OutboxService {
     private static final String ACCOUNT_CREATED =
             "ACCOUNT_CREATED";
+    private static final String TRANSFER_COMPLETED =
+            "TRANSFER_COMPLETED";
 
     private final OutboxRepository outboxRepository;
     private final ObjectMapper objectMapper;
+
 
     public OutboxService(
             OutboxRepository outboxRepository,
@@ -43,6 +47,27 @@ public class OutboxService {
             throw new IllegalStateException(
                     "AccountCreatedEvent could not be serialized.",
                     exception
+            );
+        }
+    }
+    public void saveTransferMethodEvent(
+            TransferCompletedEvent eventTransfer
+    ){
+        try{
+            String payload =
+                    objectMapper.writeValueAsString(eventTransfer);
+
+            OutboxEvent outboxEvent =
+                    new OutboxEvent(
+                            eventTransfer.eventId().toString(),
+                            TRANSFER_COMPLETED,
+                            eventTransfer.sourceAccountNumber(),
+                            payload
+                    );
+            outboxRepository.save(outboxEvent);
+        }catch (JacksonException exception){
+            throw new IllegalStateException("TransferCompletedEvent could not be serialized.",
+            exception
             );
         }
     }

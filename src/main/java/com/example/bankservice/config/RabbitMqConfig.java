@@ -26,6 +26,22 @@ public class RabbitMqConfig {
             "account.created.failed";
 
 
+    public static final String TRANSFER_COMPLETED_QUEUE =
+            "transfer.completed.queue";
+    public static final String TRANSFER_COMPLETED_EXCHANGE =
+            "transfer.completed.exchange";
+    public static final String TRANSFER_COMPLETED_ROUTING_KEY =
+            "transfer.completed";
+
+    public static final String TRANSFER_COMPLETED_DLQ =
+            "transfer.completed.dlq";
+    public static final String TRANSFER_COMPLETED_DLX =
+            "transfer.completed.dlx";
+    public static final String TRANSFER_COMPLETED_FAILED_ROUTING_KEY =
+            "transfer.completed.failed";
+
+
+
 
 
     @Bean
@@ -86,6 +102,55 @@ public class RabbitMqConfig {
         return new JacksonJsonMessageConverter();
     }
 
+    @Bean
+    public Queue transferCompletedQueue(){
+        return QueueBuilder
+                .durable(TRANSFER_COMPLETED_QUEUE)
+                .deadLetterExchange(TRANSFER_COMPLETED_DLX)
+                .deadLetterRoutingKey(TRANSFER_COMPLETED_FAILED_ROUTING_KEY)
+                .build();
+    }
+
+    @Bean
+    public Queue transferCompletedDeadLetterQueue(){
+        return QueueBuilder
+                .durable(TRANSFER_COMPLETED_DLQ)
+                .build();
+    }
+
+    @Bean
+    public DirectExchange transferCompletedExchange(){return new DirectExchange(TRANSFER_COMPLETED_EXCHANGE);}
+
+    @Bean
+    public DirectExchange transferCompletedDeadLetterExchange(){return new DirectExchange(TRANSFER_COMPLETED_DLX);}
+
+    @Bean
+    public Binding TransferCompletedBinding(
+        @Qualifier("transferCompletedQueue")
+        Queue transferCompletedQueue,
+
+        @Qualifier("transferCompletedExchange")
+        DirectExchange transferCompletedExchange
+    ){
+        return BindingBuilder
+                .bind(transferCompletedQueue)
+                .to(transferCompletedExchange)
+                .with(TRANSFER_COMPLETED_ROUTING_KEY);
+    }
+
+    @Bean
+    public Binding TransferCompletedDeadLetterBinding(
+            @Qualifier("transferCompletedDeadLetterQueue")
+            Queue transferCompletedDeadLetterQueue,
+
+            @Qualifier("transferCompletedDeadLetterExchange")
+            DirectExchange transferCompletedDeadLetterExchange
+    ){
+        return BindingBuilder
+                .bind(transferCompletedDeadLetterQueue)
+                .to(transferCompletedDeadLetterExchange)
+                .with(TRANSFER_COMPLETED_FAILED_ROUTING_KEY);
+    }
 
 
 

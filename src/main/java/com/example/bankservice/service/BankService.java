@@ -14,8 +14,10 @@ import com.example.bankservice.enums.Role;
 import com.example.bankservice.mapper.BankAccountMapper;
 import com.example.bankservice.mapper.TransferMapper;
 import com.example.bankservice.messaging.AccountCreatedEvent;
+import com.example.bankservice.messaging.TransferCompletedEvent;
 import com.example.bankservice.repository.AppUserRepository;
 import com.example.bankservice.repository.BankRepo;
+import com.example.bankservice.repository.OutboxRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -40,12 +42,14 @@ public class BankService {
     private final BankRepo reposition;
     private final AppUserRepository appUserRepository;
     private final OutboxService outboxService;
+    private final OutboxRepository outboxRepository;
 
 
-    public BankService(BankRepo reposition, AppUserRepository appUserRepository,OutboxService  outboxService) {
+    public BankService(BankRepo reposition, AppUserRepository appUserRepository, OutboxService  outboxService, OutboxRepository outboxRepository) {
         this.reposition = reposition;
         this.appUserRepository = appUserRepository;
         this.outboxService = outboxService;
+        this.outboxRepository = outboxRepository;
     }
 
     private String formatAccountNumber(String accountNumber){
@@ -103,7 +107,7 @@ public class BankService {
                 Instant.now()
 
         );
-       outboxService.saveAccountCreatedEvent(event);
+        outboxService.saveAccountCreatedEvent(event);
 
         return  BankAccountMapper.toDto(bankAccount);
     }
@@ -335,11 +339,22 @@ public class BankService {
 
 
         BigDecimal newBalanceTarget = targetAccount.getBalance().add(validatedTransferAmount);
-
         BigDecimal newBalanceSource = sourceAccount.getBalance().subtract(validatedTransferAmount);
 
         targetAccount.setBalance(newBalanceTarget);
         sourceAccount.setBalance(newBalanceSource);
+
+        TransferCompletedEvent transferCompletedEvent =
+                new TransferCompletedEvent(
+                        UUID.randomUUID(),
+                        sourceAccount.getAccountNumber(),
+                        targetAccount.getAccountNumber(),
+                        validatedTransferAmount,
+                        newBalanceSource,
+                        newBalanceTarget,
+                        Instant.now()
+                );
+        outboxService.saveTransferMethodEvent(transferCompletedEvent);
 
         return TransferMapper.toDto(
                 sourceAccount,
