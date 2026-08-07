@@ -5,6 +5,8 @@ import com.example.bankservice.enums.OutboxStatus;
 import com.example.bankservice.messaging.AccountCreatedEvent;
 import com.example.bankservice.messaging.AccountCreatedPublisher;
 import com.example.bankservice.messaging.RabbitPublishResult;
+import com.example.bankservice.messaging.TransferCompletedEvent;
+import com.example.bankservice.messaging.TransferCompletedPublisher;
 import com.example.bankservice.repository.OutboxRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,6 +36,9 @@ class OutboxEventProcessorTest {
     @Mock
     private AccountCreatedPublisher accountCreatedPublisher;
 
+    @Mock
+    private TransferCompletedPublisher transferCompletedPublisher;
+
     private OutboxEventProcessor outboxEventProcessor;
 
     @BeforeEach
@@ -42,6 +48,7 @@ class OutboxEventProcessorTest {
                         outboxRepository,
                         objectMapper,
                         accountCreatedPublisher,
+                        transferCompletedPublisher,
                         3
                 );
     }
@@ -378,6 +385,46 @@ class OutboxEventProcessorTest {
 
         verify(accountCreatedPublisher)
                 .publish(accountCreatedEvent);
+    }
+
+    @Test
+    void process_shouldPublishTransferCompletedEvent() throws JacksonException {
+        UUID eventUuid = UUID.fromString(
+                "45454545-4545-4545-4545-454545454545"
+        );
+        String eventId = eventUuid.toString();
+        String payload = "{\"sourceAccountNumber\":\"TR100\"}";
+
+        OutboxEvent outboxEvent = new OutboxEvent(
+                eventId,
+                "TRANSFER_COMPLETED",
+                "TR100",
+                payload
+        );
+        TransferCompletedEvent transferCompletedEvent =
+                new TransferCompletedEvent(
+                        eventUuid,
+                        "TR100",
+                        "TR200",
+                        new BigDecimal("50.00"),
+                        new BigDecimal("150.00"),
+                        new BigDecimal("250.00"),
+                        Instant.parse("2026-08-07T10:00:00Z")
+                );
+
+        when(outboxRepository.findByIdForUpdate(eventId))
+                .thenReturn(Optional.of(outboxEvent));
+        when(objectMapper.readValue(payload, TransferCompletedEvent.class))
+                .thenReturn(transferCompletedEvent);
+        when(transferCompletedPublisher.publishResult(transferCompletedEvent))
+                .thenReturn(new RabbitPublishResult(true, null));
+
+        outboxEventProcessor.process(eventId);
+
+        assertEquals(OutboxStatus.PUBLISHED, outboxEvent.getStatus());
+        assertNotNull(outboxEvent.getPublishedAt());
+        verify(transferCompletedPublisher).publishResult(transferCompletedEvent);
+        verifyNoInteractions(accountCreatedPublisher);
     }
 
 }

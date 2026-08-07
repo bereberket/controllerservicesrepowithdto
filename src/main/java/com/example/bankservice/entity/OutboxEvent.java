@@ -15,7 +15,7 @@ import java.time.Instant;
 @Getter
 @Entity
 @Table(name = "outbox_event")
-public class                          OutboxEvent {
+public class OutboxEvent {
 
     @Id
     @Column(name = "event_id", length = 36, nullable = false, updatable = false)
