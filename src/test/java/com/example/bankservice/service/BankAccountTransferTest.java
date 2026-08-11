@@ -1,6 +1,7 @@
 package com.example.bankservice.service;
 
 import com.example.bankservice.Enums.TransferResult;
+import com.example.bankservice.config.PostgreSqlTestContainerConfig;
 import com.example.bankservice.dto.TransferRequestDto;
 import com.example.bankservice.entity.AppUser;
 import com.example.bankservice.entity.BankAccount;
@@ -12,6 +13,7 @@ import com.example.bankservice.repository.BankRepo;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -26,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(PostgreSqlTestContainerConfig.class)
 public class BankAccountTransferTest {
     @Autowired
     private BankService bankService;

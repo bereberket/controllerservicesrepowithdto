@@ -1,5 +1,6 @@
 package com.example.bankservice.service;
 
+import com.example.bankservice.config.PostgreSqlTestContainerConfig;
 import com.example.bankservice.dto.BankAccountResponseDto;
 import com.example.bankservice.dto.CreateAccountRequestDto;
 import com.example.bankservice.entity.AppUser;
@@ -11,6 +12,7 @@ import com.example.bankservice.repository.BankRepo;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +23,7 @@ import com.example.bankservice.enums.ActiveSituation;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(PostgreSqlTestContainerConfig.class)
 public class BankServiceAppTest {
 
     @Autowired

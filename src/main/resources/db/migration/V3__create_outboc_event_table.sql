@@ -2,7 +2,7 @@ CREATE TABLE outbox_event(
     event_id VARCHAR(36) PRIMARY KEY,
     event_type VARCHAR(100)NOT NULL,
     aggregate_id VARCHAR(255) NOT NULL,
-    payload CLOB NOT NULL,
+    payload TEXT NOT NULL,
     status VARCHAR(20) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     published_at TIMESTAMP WITH TIME ZONE,
