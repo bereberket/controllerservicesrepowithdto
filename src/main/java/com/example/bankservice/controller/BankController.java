@@ -9,6 +9,7 @@ import com.example.bankservice.dto.CreateAccountRequestDto;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
@@ -95,9 +96,13 @@ public class BankController implements BankControllerApi {
                 );
     }
     @Override
-    public ResponseEntity<TransferResponseDto> transfer(TransferRequestDto transferRequestDto, Authentication authentication){
+    public ResponseEntity<TransferResponseDto> transfer(
+            TransferRequestDto transferRequestDto,
+            Authentication authentication,
+            @RequestHeader(name = "Idempotency-Key", required = false) String requestId
+    ) {
 
-        return ResponseEntity.ok(bankService.transfer(transferRequestDto, authentication.getName()));
+        return ResponseEntity.ok(bankService.transfer(transferRequestDto, authentication.getName(), requestId));
     }
 
 
