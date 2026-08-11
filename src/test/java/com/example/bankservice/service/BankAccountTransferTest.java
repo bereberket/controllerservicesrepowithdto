@@ -110,7 +110,11 @@ public class BankAccountTransferTest {
             startLatch.await();
 
             try{
-                bankService.transfer(transferRequestDto, senderUserName);
+                bankService.transfer(
+                        transferRequestDto,
+                        senderUserName,
+                        UUID.randomUUID().toString()
+                );
                 return TransferResult.SUCCESSFUL;
             }catch(InsufficientBalanceException exception){
                 return TransferResult.INSUFFICIENT_BALANCE;

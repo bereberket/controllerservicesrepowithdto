@@ -6,6 +6,7 @@ import com.example.bankservice.dto.TransferRequestDto;
 import com.example.bankservice.dto.TransferResponseDto;
 import com.example.bankservice.entity.AppUser;
 import com.example.bankservice.entity.BankAccount;
+import com.example.bankservice.entity.TransferRecord;
 import com.example.bankservice.exception.AccountAlreadyExistsException;
 import com.example.bankservice.exception.AccountNotFoundException;
 import com.example.bankservice.exception.InsufficientBalanceException;
@@ -18,6 +19,7 @@ import com.example.bankservice.messaging.TransferCompletedEvent;
 import com.example.bankservice.repository.AppUserRepository;
 import com.example.bankservice.repository.BankRepo;
 import com.example.bankservice.repository.OutboxRepository;
+import com.example.bankservice.repository.TransferRecordRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -43,13 +45,21 @@ public class BankService {
     private final AppUserRepository appUserRepository;
     private final OutboxService outboxService;
     private final OutboxRepository outboxRepository;
+    private final TransferRecordRepository transferRecordRepository;
 
 
-    public BankService(BankRepo reposition, AppUserRepository appUserRepository, OutboxService  outboxService, OutboxRepository outboxRepository) {
+    public BankService(
+            BankRepo reposition,
+            AppUserRepository appUserRepository,
+            OutboxService outboxService,
+            OutboxRepository outboxRepository,
+            TransferRecordRepository transferRecordRepository
+    ) {
         this.reposition = reposition;
         this.appUserRepository = appUserRepository;
         this.outboxService = outboxService;
         this.outboxRepository = outboxRepository;
+        this.transferRecordRepository = transferRecordRepository;
     }
 
     private String formatAccountNumber(String accountNumber){
@@ -79,6 +89,40 @@ public class BankService {
                     "Amount can have at most two decimal places"
             );
         }
+    }
+
+    private String normalizeRequestId(String requestId) {
+        if (requestId == null || requestId.isBlank()) {
+            return UUID.randomUUID().toString();
+        }
+
+        try {
+            return UUID.fromString(requestId.trim()).toString();
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Idempotency-Key must be a valid UUID");
+        }
+    }
+
+    private TransferResponseDto replayExistingTransfer(
+            TransferRecord transferRecord,
+            String sourceAccountNumber,
+            String targetAccountNumber,
+            BigDecimal amount,
+            String authenticatedUserName
+    ) {
+        boolean sameTransfer =
+                transferRecord.getSourceAccountNumber().equals(sourceAccountNumber)
+                        && transferRecord.getTargetAccountNumber().equals(targetAccountNumber)
+                        && transferRecord.getAmount().compareTo(amount) == 0
+                        && transferRecord.getPerformedBy().equals(authenticatedUserName);
+
+        if (!sameTransfer) {
+            throw new IllegalArgumentException(
+                    "Idempotency-Key was already used for a different transfer"
+            );
+        }
+
+        return TransferMapper.toDto(transferRecord);
     }
 
     @Transactional
@@ -280,11 +324,27 @@ public class BankService {
     }
 
     @Transactional
-    public TransferResponseDto transfer(TransferRequestDto transferRequestDto, String authenticatedUserName){
+    public TransferResponseDto transfer(TransferRequestDto transferRequestDto, String authenticatedUserName, String requestId){
         String formattedSourceNumber =
                 formatAccountNumber(transferRequestDto.getSourceAccountNumber());
         String formattedTargetNumber =
                 formatAccountNumber(transferRequestDto.getTargetAccountNumber());
+        BigDecimal validatedTransferAmount = validateMoneyAmount(transferRequestDto.getAmount());
+        String normalizedRequestId = normalizeRequestId(requestId);
+
+        TransferRecord existingTransfer = transferRecordRepository
+                .findByRequestId(normalizedRequestId)
+                .orElse(null);
+
+        if (existingTransfer != null) {
+            return replayExistingTransfer(
+                    existingTransfer,
+                    formattedSourceNumber,
+                    formattedTargetNumber,
+                    validatedTransferAmount,
+                    authenticatedUserName
+            );
+        }
 
         String firstAccountNumber;
         String secondAccountNumber;
@@ -311,6 +371,21 @@ public class BankService {
                     log.warn("Target account does not exist");
                     return new AccountNotFoundException("Account not found");
                 });
+
+        existingTransfer = transferRecordRepository
+                .findByRequestId(normalizedRequestId)
+                .orElse(null);
+
+        if (existingTransfer != null) {
+            return replayExistingTransfer(
+                    existingTransfer,
+                    formattedSourceNumber,
+                    formattedTargetNumber,
+                    validatedTransferAmount,
+                    authenticatedUserName
+            );
+        }
+
         if (firstLockedNumber.getAccountNumber()
                 .equals(formattedSourceNumber)) {
 
@@ -330,8 +405,6 @@ public class BankService {
             throw new AccountNotFoundException("Account doesn't found!");
         }
 
-        BigDecimal validatedTransferAmount = validateMoneyAmount(transferRequestDto.getAmount());
-
         if(validatedTransferAmount.compareTo(sourceAccount.getBalance())>0){
             log.warn("Insufficient balance");
             throw new InsufficientBalanceException("Your balance is insufficient");
@@ -344,6 +417,20 @@ public class BankService {
         targetAccount.setBalance(newBalanceTarget);
         sourceAccount.setBalance(newBalanceSource);
 
+        Instant transferredAt = Instant.now();
+        TransferRecord transferRecord = new TransferRecord(
+                UUID.randomUUID().toString(),
+                normalizedRequestId,
+                authenticatedUserName,
+                sourceAccount.getAccountNumber(),
+                targetAccount.getAccountNumber(),
+                validatedTransferAmount,
+                newBalanceSource,
+                newBalanceTarget,
+                transferredAt
+        );
+        transferRecordRepository.save(transferRecord);
+
         TransferCompletedEvent transferCompletedEvent =
                 new TransferCompletedEvent(
                         UUID.randomUUID(),
@@ -352,14 +439,11 @@ public class BankService {
                         validatedTransferAmount,
                         newBalanceSource,
                         newBalanceTarget,
-                        Instant.now()
+                        transferredAt
                 );
         outboxService.saveTransferMethodEvent(transferCompletedEvent);
 
-        return TransferMapper.toDto(
-                sourceAccount,
-                targetAccount,
-                validatedTransferAmount);
+        return TransferMapper.toDto(transferRecord);
     }
 }
 

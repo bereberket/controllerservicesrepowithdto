@@ -5,20 +5,25 @@ import com.example.bankservice.dto.TransferRequestDto;
 import com.example.bankservice.dto.TransferResponseDto;
 import com.example.bankservice.entity.AppUser;
 import com.example.bankservice.entity.BankAccount;
+import com.example.bankservice.entity.TransferRecord;
 import com.example.bankservice.enums.ActiveSituation;
 import com.example.bankservice.enums.Role;
 import com.example.bankservice.exception.AccountNotFoundException;
 import com.example.bankservice.repository.AppUserRepository;
 import com.example.bankservice.repository.BankRepo;
+import com.example.bankservice.repository.TransferRecordRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -34,6 +39,9 @@ public class BankAccountTransferMethodTest {
 
     @Mock
     private OutboxService outboxService;
+
+    @Mock
+    private TransferRecordRepository transferRecordRepository;
 
     @InjectMocks
     private BankService bankService;
@@ -86,10 +94,17 @@ public class BankAccountTransferMethodTest {
 
         //ACT
         TransferResponseDto result =
-                bankService.transfer(transferRequestDto, authenticatedUserName);
+                bankService.transfer(transferRequestDto, authenticatedUserName, null);
         assertEquals(new BigDecimal("100.00"), result.getSourceAfterTransfer());
 
         verify(bankRepo).findAccountForUpdate("TR123");
+        ArgumentCaptor<TransferRecord> transferRecordCaptor =
+                ArgumentCaptor.forClass(TransferRecord.class);
+        verify(transferRecordRepository).save(transferRecordCaptor.capture());
+
+        String generatedRequestId = transferRecordCaptor.getValue().getRequestId();
+        assertEquals(generatedRequestId, UUID.fromString(generatedRequestId).toString());
+        verify(outboxService).saveTransferMethodEvent(any());
     }
 
     @Test
@@ -144,7 +159,11 @@ public class BankAccountTransferMethodTest {
 
         AccountNotFoundException exception = assertThrows(
                 AccountNotFoundException.class,
-                ()-> bankService.transfer(transferRequestDto,"different-user")
+                ()-> bankService.transfer(
+                        transferRequestDto,
+                        "different-user",
+                        "22222222-2222-2222-2222-222222222222"
+                )
         );
 
         assertEquals("Account doesn't found!", exception.getMessage());
@@ -155,6 +174,46 @@ public class BankAccountTransferMethodTest {
         verify(bankRepo).findAccountForUpdate("TR123");
         verify(bankRepo).findAccountForUpdate("TR456");
         verify(bankRepo, never()).save(any(BankAccount.class));
+        verify(transferRecordRepository, never()).save(any(TransferRecord.class));
+        verifyNoInteractions(outboxService);
+    }
+
+    @Test
+    void transfer_shouldReturnPreviousResult_whenRequestIdWasAlreadyProcessed() {
+        TransferRequestDto request = new TransferRequestDto();
+        request.setSourceAccountNumber("TR123");
+        request.setTargetAccountNumber("TR456");
+        request.setAmount(new BigDecimal("100.00"));
+
+        String requestId = "33333333-3333-3333-3333-333333333333";
+        TransferRecord existingTransfer = new TransferRecord(
+                "44444444-4444-4444-4444-444444444444",
+                requestId,
+                authenticatedUserName,
+                "TR123",
+                "TR456",
+                new BigDecimal("100.00"),
+                new BigDecimal("100.00"),
+                new BigDecimal("300.00"),
+                Instant.parse("2026-08-11T10:00:00Z")
+        );
+
+        when(transferRecordRepository.findByRequestId(requestId))
+                .thenReturn(Optional.of(existingTransfer));
+
+        TransferResponseDto result = bankService.transfer(
+                request,
+                authenticatedUserName,
+                requestId
+        );
+
+        assertEquals(new BigDecimal("100.00"), result.getAmount());
+        assertEquals(new BigDecimal("100.00"), result.getSourceAfterTransfer());
+        assertEquals(existingTransfer.getCreatedAt(), result.getTransferredAt());
+
+        verifyNoInteractions(bankRepo);
+        verifyNoInteractions(outboxService);
+        verify(transferRecordRepository, never()).save(any(TransferRecord.class));
     }
 
 

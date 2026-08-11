@@ -12,6 +12,7 @@ import com.example.bankservice.messaging.AccountCreatedEvent;
 import com.example.bankservice.messaging.AccountCreatedPublisher;
 import com.example.bankservice.repository.AppUserRepository;
 import com.example.bankservice.repository.BankRepo;
+import com.example.bankservice.repository.TransferRecordRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +39,8 @@ public class BankServiceTest {
     private BankRepo bankRepo;
     @Mock
     private OutboxService outboxService;
+    @Mock
+    private TransferRecordRepository transferRecordRepository;
 
     @InjectMocks
     private BankService bankService;
