@@ -6,7 +6,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.Getter;
 
@@ -27,7 +26,6 @@ public class OutboxEvent {
     @Column(name = "aggregate_id", length = 255, nullable = false)
     private String aggregateId;    //which account belongs to
 
-    @Lob
     @Column(name = "payload", nullable = false)
     private String payload;  //Json Type of event
 
