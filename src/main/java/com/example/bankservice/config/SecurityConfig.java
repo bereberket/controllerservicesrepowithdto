@@ -57,6 +57,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/register",
                                 "/api/auth/login",
+                                "/h2-console/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
@@ -88,6 +89,12 @@ public class SecurityConfig {
 
                         .anyRequest().authenticated()
                 )
+
+
+                .headers(headers ->headers
+                                .frameOptions(frameOptionsConfig -> frameOptionsConfig.sameOrigin())
+                )
+
                 .httpBasic(Customizer.withDefaults());
 
         return http.build();

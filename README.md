@@ -17,8 +17,7 @@ problemlerine anlaşılır çözümler geliştirmekti.
 - Spring Web MVC
 - Spring Data JPA ve Hibernate
 - Spring Security ve HTTP Basic Authentication
-- PostgreSQL 18
-- Testcontainers
+- H2 Database
 - Flyway
 - RabbitMQ ve Spring AMQP
 - Springdoc OpenAPI / Swagger UI
@@ -64,7 +63,7 @@ flowchart LR
     Security --> Controller["Controller"]
     Controller --> Service["Service"]
     Service --> Repository["JPA Repository"]
-    Repository --> Database[("PostgreSQL")]
+    Repository --> Database[("H2 Database")]
     Service --> Outbox[("Outbox Event")]
     Outbox --> Worker["Outbox Worker"]
     Worker --> Publisher["RabbitMQ Publisher"]
@@ -121,7 +120,7 @@ Projede HTTP Basic Authentication kullanıyorum. Spring Security, kullanıcıyı
 `AppUserRepository` üzerinden bulur ve girilen ham şifreyi veri tabanındaki
 BCrypt hash ile karşılaştırır.
 
-- Kayıt, giriş ve Swagger adresleri herkese açıktır.
+- Kayıt, giriş, H2 Console ve Swagger adresleri herkese açıktır.
 - Banka hesabı işlemleri `CUSTOMER` veya `ADMIN` rolü gerektirir.
 - Tüm hesapları listeleme ve kullanıcı silme işlemleri `ADMIN` rolü gerektirir.
 - Başarısız outbox kaydını yeniden kuyruğa alma işlemi `ADMIN` rolü gerektirir.
@@ -142,7 +141,6 @@ değiştirmesi yerine veri tabanı değişikliklerini Flyway ile yönetiyorum.
 | `V3__create_outboc_event_table.sql` | Transactional outbox tablosunu oluşturur. |
 | `V4__change_balance_to_decimal.sql` | Para alanını decimal yapısına dönüştürür. |
 | `V5__add_version_to_bank_account.sql` | Optimistic locking için version alanını ekler. |
-| `V6__create_transfer_table.sql` | Idempotent para transferlerini kaydeder. |
 
 Uygulama başlarken Flyway yalnızca daha önce çalıştırılmamış migration'ları
 sırayla uygular ve sonucu `flyway_schema_history` tablosunda saklar.
@@ -152,7 +150,7 @@ sırayla uygular ve sonucu `flyway_schema_history` tablosunda saklar.
 ### Gereksinimler
 
 - JDK 17 veya üzeri
-- Docker Desktop
+- Docker Desktop veya yerel RabbitMQ kurulumu
 - Git
 
 ### 1. Projeyi Klonlama
@@ -162,43 +160,39 @@ git clone https://github.com/bereberket/controllerservicesrepowithdto.git
 cd controllerservicesrepowithdto
 ```
 
-### 2. Ortam Değişkenlerini Hazırlama
+### 2. RabbitMQ'yu Docker ile Başlatma
 
 ```powershell
-Copy-Item .env.example .env
+docker run -d --name bank-rabbit `
+  -p 5672:5672 `
+  -p 15672:15672 `
+  -e RABBITMQ_DEFAULT_USER=bankuser `
+  -e RABBITMQ_DEFAULT_PASS=bankpass `
+  -v bank-rabbit-data:/var/lib/rabbitmq `
+  rabbitmq:4-management
 ```
 
-`.env` yerel PostgreSQL ve RabbitMQ bağlantı bilgilerini içerir. Bu dosya Git
-tarafından takip edilmez; örnek anahtarları yalnızca yerel geliştirme içindir.
-
-### 3. Uygulamayı Docker Compose ile Başlatma
+Uygulamayı çalıştırmadan önce aynı terminalde bağlantı bilgilerini tanımlarım:
 
 ```powershell
-docker compose up -d --build
-docker compose ps
+$env:RABBITMQ_USERNAME="bankuser"
+$env:RABBITMQ_PASSWORD="bankpass"
 ```
 
-Bu komut PostgreSQL, RabbitMQ ve bank-service container'larını aynı Docker ağı
-üzerinde başlatır. PostgreSQL ve RabbitMQ verileri named volume'larda korunur.
-
-### 4. Testleri Çalıştırma
+Daha önce oluşturduğum container duruyorsa yeniden `docker run` çalıştırmak
+yerine şu komutu kullanırım:
 
 ```powershell
-.\mvnw.cmd clean verify
+docker start bank-rabbit
 ```
 
-Integration testler Testcontainers ile geçici bir PostgreSQL 18 container'ı
-başlatır. Bu nedenle testler çalışırken Docker Desktop açık olmalıdır.
-
-### 5. Uygulamayı IntelliJ veya Maven ile Başlatma
-
-Yalnızca altyapı servislerini başlatırım:
+### 3. Testleri Çalıştırma
 
 ```powershell
-docker compose up -d postgres rabbitmq
+.\mvnw.cmd test
 ```
 
-Ardından uygulamayı IntelliJ'den veya Maven ile çalıştırırım:
+### 4. Uygulamayı Başlatma
 
 ```powershell
 .\mvnw.cmd spring-boot:run
@@ -206,20 +200,22 @@ Ardından uygulamayı IntelliJ'den veya Maven ile çalıştırırım:
 
 Uygulama varsayılan olarak `8082` portunda çalışır.
 
-Servisleri durdurmak için:
-
-```powershell
-docker compose down
-```
-
 ## Kullanışlı Adresler
 
 | Araç | Adres |
 | --- | --- |
 | Swagger UI | `http://localhost:8082/swagger-ui.html` |
 | OpenAPI JSON | `http://localhost:8082/v3/api-docs` |
-| Actuator Health | `http://localhost:8082/actuator/health` |
+| H2 Console | `http://localhost:8082/h2-console` |
 | RabbitMQ Management | `http://localhost:15672` |
+
+H2 Console bağlantı bilgileri:
+
+```text
+JDBC URL: jdbc:h2:file:./data/bankdb
+User Name: sa
+Password: boş
+```
 
 ## Temel API Endpoint'leri
 
@@ -257,9 +253,8 @@ girmem.
 
 Unit testlerde bağımlılıkları Mockito ile mocklayarak sınıfın kendi iş
 kurallarını izole şekilde test ediyorum. Integration testlerde ise Spring
-ApplicationContext'i ve gerçek repository'leri kullanıyorum. Integration testlerde
-Testcontainers geçici bir PostgreSQL container'ı başlatır; Flyway migration'ları bu
-veri tabanına uygulanır ve testler production ile aynı veri tabanı motorunda çalışır.
+ApplicationContext'i, gerçek repository'leri ve test profilindeki H2 veri
+tabanını kullanıyorum.
 
 Test kapsamımda özellikle şu senaryolar bulunuyor:
 
@@ -272,9 +267,10 @@ Test kapsamımda özellikle şu senaryolar bulunuyor:
 - İki eş zamanlı para çekme isteği
 - Global hata cevapları
 
-## DevOps Çalışmaları
+## Sıradaki Çalışmalarım
 
-- Multi-stage Dockerfile ile uygulama image'ı oluşturuyorum.
-- PostgreSQL, RabbitMQ ve uygulamayı Docker Compose ile birlikte çalıştırıyorum.
-- GitHub Actions üzerinde otomatik build ve test süreci çalıştırıyorum.
-- Başarılı main build'lerinde Docker image'ını GitHub Container Registry'ye gönderiyorum.
+- AOP ile merkezi loglama ve metot çalışma süresi ölçümü
+- Spring Boot uygulaması için Docker image oluşturma
+- RabbitMQ ve uygulamayı Docker Compose ile birlikte çalıştırma
+- GitHub Actions ile otomatik test ve build süreci
+- CI/CD pipeline ve deployment adımları
