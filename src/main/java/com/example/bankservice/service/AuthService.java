@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 
 
-public class AuthService {
+public class    AuthService {
     public static final Logger log = LoggerFactory.getLogger(AuthService.class);
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
