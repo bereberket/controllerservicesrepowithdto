@@ -1,7 +1,6 @@
 package com.example.bankservice.controller;
 
 import com.example.bankservice.dto.AuthenticateDto;
-import com.example.bankservice.dto.LoginRequestDto;
 import com.example.bankservice.dto.RegisterRequestDto;
 import com.example.bankservice.service.AuthService;
 import jakarta.validation.Valid;
@@ -32,15 +31,5 @@ public class AuthController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(responses);
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<AuthenticateDto> login(
-            @Valid @RequestBody LoginRequestDto loginRequestDto
-    ) {
-        AuthenticateDto authenticateDto =
-                authService.login(loginRequestDto);
-
-        return ResponseEntity.ok(authenticateDto);
     }
 }
