@@ -75,6 +75,12 @@ public class BankController implements BankControllerApi {
         return ResponseEntity.ok(bankService.getAccountsWithBalanceGreaterThan(minBalance,authentication.getName()));
 
     }
+
+    @Override
+    public ResponseEntity<List<BankAccountResponseDto>> getMyAccounts(Authentication authentication) {
+        return ResponseEntity.ok(bankService.getMyAccounts(authentication.getName()));
+    }
+
     @Override
     public ResponseEntity<Void> deleteUser(String userName){
         bankService.deleteUser(userName);

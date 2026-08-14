@@ -94,6 +94,11 @@ public interface BankControllerApi {
             Authentication authentication
     );
 
+    @GetMapping("/my-accounts")
+    ResponseEntity<List<BankAccountResponseDto>> getMyAccounts(
+            Authentication authentication
+    );
+
     @DeleteMapping("/deleteuser/{userName}")
     ResponseEntity<Void> deleteUser(@PathVariable String userName);
 

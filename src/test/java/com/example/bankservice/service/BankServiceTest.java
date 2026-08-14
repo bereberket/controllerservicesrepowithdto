@@ -22,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -319,6 +320,31 @@ public class BankServiceTest {
         );
 
         verify(bankRepo, never()).delete(any(BankAccount.class));
+    }
+
+    @Test
+    void getMyAccounts_shouldReturnAccountsOwnedByAuthenticatedUser() {
+        BankAccount firstAccount = new BankAccount();
+        firstAccount.setName("Ana Hesap");
+        firstAccount.setAccountNumber("TR123");
+        firstAccount.setBalance(new BigDecimal("100.00"));
+
+        BankAccount secondAccount = new BankAccount();
+        secondAccount.setName("Birikim Hesabi");
+        secondAccount.setAccountNumber("TR456");
+        secondAccount.setBalance(new BigDecimal("250.00"));
+
+        when(bankRepo.findByAppUserUsername(authenticatedUserName))
+                .thenReturn(List.of(firstAccount, secondAccount));
+
+        List<BankAccountResponseDto> result =
+                bankService.getMyAccounts(authenticatedUserName);
+
+        assertEquals(2, result.size());
+        assertEquals("TR123", result.get(0).getAccountNumber());
+        assertEquals("TR456", result.get(1).getAccountNumber());
+
+        verify(bankRepo).findByAppUserUsername(authenticatedUserName);
     }
 
 }

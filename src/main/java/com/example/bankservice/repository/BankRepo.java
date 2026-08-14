@@ -19,6 +19,8 @@ public interface BankRepo extends JpaRepository<BankAccount, Long> {
 
     List<BankAccount> findByBalanceGreaterThanAndAppUserUsername(BigDecimal minBalance, String username);
 
+    List<BankAccount> findByAppUserUsername(String username);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
             select account

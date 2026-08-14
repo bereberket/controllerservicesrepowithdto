@@ -295,6 +295,14 @@ public class BankService {
         
     }
 
+    @Transactional(readOnly = true)
+    public List<BankAccountResponseDto> getMyAccounts(String authenticatedUserName) {
+        return reposition.findByAppUserUsername(authenticatedUserName)
+                .stream()
+                .map(BankAccountMapper::toDto)
+                .toList();
+    }
+
     @Transactional
     public void deleteUser(String userName){
 
