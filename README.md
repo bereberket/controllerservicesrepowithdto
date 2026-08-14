@@ -222,7 +222,6 @@ Password: boş
 | Metot | Endpoint | Açıklama |
 | --- | --- | --- |
 | `POST` | `/api/auth/register` | Bir veya daha fazla kullanıcı kaydeder. |
-| `POST` | `/api/auth/login` | Kullanıcı bilgilerini doğrular. |
 | `POST` | `/api/accounts/createAccount` | Oturum açmış kullanıcı için hesap oluşturur. |
 | `POST` | `/api/accounts/createAccounts` | Birden fazla hesap oluşturur. |
 | `GET` | `/api/accounts/{accountNumber}/getAccount` | Kullanıcının kendi hesabını getirir. |

@@ -1,13 +1,10 @@
 package com.example.bankservice.service;
 
 import com.example.bankservice.dto.AuthenticateDto;
-import com.example.bankservice.dto.LoginRequestDto;
 import com.example.bankservice.dto.RegisterRequestDto;
 import com.example.bankservice.enums.ActiveSituation;
 import com.example.bankservice.enums.Role;
 import com.example.bankservice.repository.AppUserRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.example.bankservice.entity.AppUser;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,8 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 
 
-public class    AuthService {
-    public static final Logger log = LoggerFactory.getLogger(AuthService.class);
+public class AuthService {
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -40,26 +36,4 @@ public class    AuthService {
         appUserRepository.save(appUser);
         return new AuthenticateDto("Registration successful",request.getUsername());
     }
-
-    @Transactional(readOnly = true)
-    public AuthenticateDto login(LoginRequestDto requestDto){
-        AppUser appUser = appUserRepository.findByUsername(requestDto.getUsername())
-                .orElseThrow(() -> {
-                    log.warn("Incorrect username");
-                    return  new IllegalArgumentException("Incorrect username or password");
-                });
-        if(appUser.getState() != ActiveSituation.ACTIVE){
-            log.warn("inactive user!");
-            throw new IllegalStateException("Your accounts are inactive");
-        }
-        if(!passwordEncoder.matches(
-                requestDto.getPassword(),
-                appUser.getPassword()
-        )){
-            throw new IllegalArgumentException("Incorrect username or password");
-        }
-        log.info("Login successfully");
-        return new AuthenticateDto("Login Successful.", requestDto.getUsername());
-    }
-
 }
